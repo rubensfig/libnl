@@ -116,6 +116,7 @@ libnlinclude_netlink_route_HEADERS = \
 	include/netlink/route/rule.h \
 	include/netlink/route/tc-api.h \
 	include/netlink/route/tc.h \
+	include/netlink/route/mdb.h \
 	$(NULL)
 libnlinclude_netlink_route_actdir = $(libnlincludedir)/netlink/route/act
 libnlinclude_netlink_route_act_HEADERS = \
@@ -418,6 +419,7 @@ lib_libnl_route_3_la_SOURCES = \
 	lib/route/neightbl.c \
 	lib/route/netconf.c \
 	lib/route/nexthop.c \
+	lib/route/mdb.c \
 	lib/route/nexthop_encap.c \
 	lib/route/nh_encap_mpls.c \
 	lib/route/pktloc.c \
