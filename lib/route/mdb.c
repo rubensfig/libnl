@@ -238,6 +238,7 @@ errout_nomem:
 	err = -NLE_NOMEM;
 	goto errout;
 #endif
+  printf("got smth");
 }
 
 static int mdb_request_update(struct nl_cache *cache, struct nl_sock *sk)
@@ -410,6 +411,7 @@ void rtnl_mdb_put(struct rtnl_mdb *mdb)
 
 int rtnl_mdb_alloc_cache(struct nl_sock *sk, struct nl_cache **result)
 {
+  printf("here");
 	return nl_cache_alloc_and_fill(&rtnl_mdb_ops, sk, result);
 }
 
@@ -574,6 +576,7 @@ static struct nl_cache_ops rtnl_mdb_ops = {
 					END_OF_MSGTYPES_LIST,
 				  },
 	.co_protocol		= NETLINK_ROUTE,
+  .co_msg_parser = mdb_msg_parser,
 	.co_obj_ops		= &mdb_obj_ops,
 };
 

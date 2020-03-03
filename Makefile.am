@@ -210,6 +210,7 @@ libnlinclude_netlink_cli_HEADERS = \
 	include/netlink/cli/rule.h \
 	include/netlink/cli/tc.h \
 	include/netlink/cli/utils.h \
+	include/netlink/cli/mdb.h \
 	$(NULL)
 endif
 
@@ -620,6 +621,7 @@ src_lib_libnl_cli_3_la_SOURCES = \
 	src/lib/rule.c \
 	src/lib/tc.c \
 	src/lib/utils.c \
+	src/lib/mdb.c \
 	$(NULL)
 EXTRA_src_lib_libnl_cli_3_la_DEPENDENCIES = \
 	libnl-cli-3.sym

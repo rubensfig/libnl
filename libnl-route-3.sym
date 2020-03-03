@@ -1149,4 +1149,5 @@ global:
 	rtnl_vlan_set_protocol;
 	rtnl_vlan_set_vlan_id;
 	rtnl_vlan_set_vlan_prio;
+	rtnl_mdb_alloc_cache;
 } libnl_3_4;
