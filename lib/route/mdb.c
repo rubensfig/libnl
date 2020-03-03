@@ -63,13 +63,13 @@ static int mdb_clone(struct nl_object *_dst, struct nl_object *_src)
 
 	return 0;
 #endif
+  return 0;
 }
 
-/*static struct nla_policy mdb_policy[IFA_MAX+1] = {
-	[IFA_LABEL]	= { .type = NLA_STRING,
+static struct nla_policy mdb_policy[MDBA_MAX+1] = {
+	[MDBA_MDB_ENTRY]	= { .type = NLA_NESTED,
 			    .maxlen = IFNAMSIZ },
-	[IFA_CACHEINFO]	= { .minlen = sizeof(struct ifa_cacheinfo) },
-};*/
+};
 
 static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 			   struct nlmsghdr *nlh, struct nl_parser_param *pp)
@@ -238,7 +238,11 @@ errout_nomem:
 	err = -NLE_NOMEM;
 	goto errout;
 #endif
-  printf("got smth");
+	struct nlattr *tb[MDBA_MAX+1];
+	int err = 0;
+
+	err = nlmsg_parse(nlh, sizeof(struct br_mdb_entry), tb, MDBA_MAX, mdb_policy);
+  return 0;
 }
 
 static int mdb_request_update(struct nl_cache *cache, struct nl_sock *sk)
@@ -286,6 +290,7 @@ static void mdb_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 	if (link_cache)
 		nl_cache_put(link_cache);
 #endif
+  printf("mdb print line");
 }
 
 static void mdb_dump_details(struct nl_object *obj, struct nl_dump_params *p)
@@ -559,10 +564,17 @@ int rtnl_mdb_set_attribute(/*struct rtnl_addr *addr, const char *label*/)
 static struct nl_object_ops mdb_obj_ops = {
 	.oo_name		= "route/mdb",
 	.oo_size		= sizeof(struct br_mdb_entry),
+	.oo_dump = {
+	    [NL_DUMP_LINE] 	= mdb_dump_line,
+	    [NL_DUMP_DETAILS]	= mdb_dump_line,
+	    [NL_DUMP_STATS]	= mdb_dump_line,
+	},
 };
 
 static struct nl_af_group mdb_groups[] = {
 	{ AF_BRIDGE,	RTNLGRP_MDB },
+	{ AF_INET,	RTNLGRP_MDB },
+	{ AF_UNSPEC,	RTNLGRP_MDB },
 	{ END_OF_GROUP_LIST },
 };
 
@@ -577,6 +589,7 @@ static struct nl_cache_ops rtnl_mdb_ops = {
 				  },
 	.co_protocol		= NETLINK_ROUTE,
   .co_msg_parser = mdb_msg_parser,
+  .co_groups		= mdb_groups,
 	.co_obj_ops		= &mdb_obj_ops,
 };
 

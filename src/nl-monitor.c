@@ -77,7 +77,7 @@ static void print_usage(void)
 int main(int argc, char *argv[])
 {
 	struct nl_dump_params dp = {
-		.dp_type = NL_DUMP_STATS,
+		.dp_type = NL_DUMP_LINE,
 		.dp_fd = stdout,
 		.dp_dump_msgtype = 1,
 	};

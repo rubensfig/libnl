@@ -542,6 +542,7 @@ struct nlmsghdr *nlmsg_put(struct nl_msg *n, uint32_t pid, uint32_t seq,
  */
 struct nlmsghdr *nlmsg_hdr(struct nl_msg *n)
 {
+  nl_msg_dump(n, stdout);
 	return n->nm_nlh;
 }
 
