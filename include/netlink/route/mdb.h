@@ -59,6 +59,11 @@ enum {
 };
 #define MDBA_MDB_ENTRY_MAX (__MDBA_MDB_ENTRY_MAX - 1)
 
+struct br_port_msg {
+	__u8  family;
+	__u32 ifindex;
+};
+
 struct br_mdb_entry {
 	__u32 ifindex;
 #define MDB_TEMPORARY 0
@@ -76,6 +81,13 @@ struct br_mdb_entry {
 	} addr;
 };
 
+enum {
+	MDBA_SET_ENTRY_UNSPEC,
+	MDBA_SET_ENTRY,
+	__MDBA_SET_ENTRY_MAX,
+};
+
+#define MDBA_SET_ENTRY_MAX (__MDBA_SET_ENTRY_MAX - 1)
 struct rtnl_mdb *rtnl_mdb_alloc(void);
 void rtnl_mdb_put(struct rtnl_mdb *mdb);
 

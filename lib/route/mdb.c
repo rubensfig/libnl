@@ -67,181 +67,40 @@ static int mdb_clone(struct nl_object *_dst, struct nl_object *_src)
 }
 
 static struct nla_policy mdb_policy[MDBA_MAX+1] = {
-	[MDBA_MDB_ENTRY]	= { .type = NLA_NESTED,
-			    .maxlen = IFNAMSIZ },
+	[MDBA_MDB_ENTRY]	= { .type = NLA_NESTED },
+};
+
+static struct nla_policy mdb_entry_policy[MDBA_MDB_ENTRY_MAX+1] = {
+	[MDBA_MDB_ENTRY_INFO]	= { .type = NLA_UNSPEC },
 };
 
 static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 			   struct nlmsghdr *nlh, struct nl_parser_param *pp)
 {
-#if 0
-	struct rtnl_addr *addr;
-	struct ifaddrmsg *ifa;
-	struct nlattr *tb[IFA_MAX+1];
-	int err, family;
-	struct nl_cache *link_cache;
-	struct nl_addr *plen_addr = NULL;
 
-	addr = rtnl_addr_alloc();
-	if (!addr)
-		return -NLE_NOMEM;
-
-	addr->ce_msgtype = nlh->nlmsg_type;
-
-	err = nlmsg_parse(nlh, sizeof(*ifa), tb, IFA_MAX, addr_policy);
-	if (err < 0)
-		goto errout;
-
-	ifa = nlmsg_data(nlh);
-	addr->a_family = family = ifa->ifa_family;
-	addr->a_prefixlen = ifa->ifa_prefixlen;
-	addr->a_scope = ifa->ifa_scope;
-	addr->a_flags = tb[IFA_FLAGS] ? nla_get_u32(tb[IFA_FLAGS]) :
-					ifa->ifa_flags;
-	addr->a_ifindex = ifa->ifa_index;
-
-	addr->ce_mask = (ADDR_ATTR_FAMILY | ADDR_ATTR_PREFIXLEN |
-			 ADDR_ATTR_FLAGS | ADDR_ATTR_SCOPE | ADDR_ATTR_IFINDEX);
-
-	if (tb[IFA_LABEL]) {
-		nla_strlcpy(addr->a_label, tb[IFA_LABEL], IFNAMSIZ);
-		addr->ce_mask |= ADDR_ATTR_LABEL;
-	}
-
-	/* IPv6 only */
-	if (tb[IFA_CACHEINFO]) {
-		struct ifa_cacheinfo *ca;
-		
-		ca = nla_data(tb[IFA_CACHEINFO]);
-		addr->a_cacheinfo.aci_prefered = ca->ifa_prefered;
-		addr->a_cacheinfo.aci_valid = ca->ifa_valid;
-		addr->a_cacheinfo.aci_cstamp = ca->cstamp;
-		addr->a_cacheinfo.aci_tstamp = ca->tstamp;
-		addr->ce_mask |= ADDR_ATTR_CACHEINFO;
-	}
-
-	if (family == AF_INET) {
-		uint32_t null = 0;
-
-		/* for IPv4/AF_INET, kernel always sets IFA_LOCAL and IFA_ADDRESS, unless it
-		 * is effectively 0.0.0.0. */
-		if (tb[IFA_LOCAL])
-			addr->a_local = nl_addr_alloc_attr(tb[IFA_LOCAL], family);
-		else
-			addr->a_local = nl_addr_build(family, &null, sizeof (null));
-		if (!addr->a_local)
-			goto errout_nomem;
-		addr->ce_mask |= ADDR_ATTR_LOCAL;
-
-		if (tb[IFA_ADDRESS])
-			addr->a_peer = nl_addr_alloc_attr(tb[IFA_ADDRESS], family);
-		else
-			addr->a_peer = nl_addr_build(family, &null, sizeof (null));
-		if (!addr->a_peer)
-			goto errout_nomem;
-
-		if (!nl_addr_cmp (addr->a_local, addr->a_peer)) {
-			/* having IFA_ADDRESS equal to IFA_LOCAL does not really mean
-			 * there is no peer. It means the peer is equal to the local address,
-			 * which is the case for "normal" addresses.
-			 *
-			 * Still, clear the peer and pretend it is unset for backward
-			 * compatibility. */
-			nl_addr_put(addr->a_peer);
-			addr->a_peer = NULL;
-		} else
-			addr->ce_mask |= ADDR_ATTR_PEER;
-
-		plen_addr = addr->a_local;
-	} else {
-		if (tb[IFA_LOCAL]) {
-			addr->a_local = nl_addr_alloc_attr(tb[IFA_LOCAL], family);
-			if (!addr->a_local)
-				goto errout_nomem;
-			addr->ce_mask |= ADDR_ATTR_LOCAL;
-			plen_addr = addr->a_local;
-		}
-
-		if (tb[IFA_ADDRESS]) {
-			struct nl_addr *a;
-
-			a = nl_addr_alloc_attr(tb[IFA_ADDRESS], family);
-			if (!a)
-				goto errout_nomem;
-
-			/* IPv6 sends the local address as IFA_ADDRESS with
-			 * no IFA_LOCAL, IPv4 sends both IFA_LOCAL and IFA_ADDRESS
-			 * with IFA_ADDRESS being the peer address if they differ */
-			if (!tb[IFA_LOCAL] || !nl_addr_cmp(a, addr->a_local)) {
-				nl_addr_put(addr->a_local);
-				addr->a_local = a;
-				addr->ce_mask |= ADDR_ATTR_LOCAL;
-			} else {
-				addr->a_peer = a;
-				addr->ce_mask |= ADDR_ATTR_PEER;
-			}
-
-			plen_addr = a;
-		}
-	}
-
-	if (plen_addr)
-		nl_addr_set_prefixlen(plen_addr, addr->a_prefixlen);
-
-	/* IPv4 only */
-	if (tb[IFA_BROADCAST]) {
-		addr->a_bcast = nl_addr_alloc_attr(tb[IFA_BROADCAST], family);
-		if (!addr->a_bcast)
-			goto errout_nomem;
-
-		addr->ce_mask |= ADDR_ATTR_BROADCAST;
-	}
-
-	/* IPv6 only */
-	if (tb[IFA_MULTICAST]) {
-		addr->a_multicast = nl_addr_alloc_attr(tb[IFA_MULTICAST],
-						       family);
-		if (!addr->a_multicast)
-			goto errout_nomem;
-
-		addr->ce_mask |= ADDR_ATTR_MULTICAST;
-	}
-
-	/* IPv6 only */
-	if (tb[IFA_ANYCAST]) {
-		addr->a_anycast = nl_addr_alloc_attr(tb[IFA_ANYCAST],
-						       family);
-		if (!addr->a_anycast)
-			goto errout_nomem;
-
-		addr->ce_mask |= ADDR_ATTR_ANYCAST;
-	}
-
-	if ((link_cache = __nl_cache_mngt_require("route/link"))) {
-		struct rtnl_link *link;
-
-		if ((link = rtnl_link_get(link_cache, addr->a_ifindex))) {
-			rtnl_addr_set_link(addr, link);
-
-			/* rtnl_addr_set_link incs refcnt */
-			rtnl_link_put(link);
-		}
-	}
-
-	err = pp->pp_cb((struct nl_object *) addr, pp);
-errout:
-	rtnl_addr_put(addr);
-
-	return err;
-
-errout_nomem:
-	err = -NLE_NOMEM;
-	goto errout;
-#endif
-	struct nlattr *tb[MDBA_MAX+1];
+  struct nlattr *tb[MDBA_MAX+1];
 	int err = 0;
 
-	err = nlmsg_parse(nlh, sizeof(struct br_mdb_entry), tb, MDBA_MAX, mdb_policy);
+	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy);
+	struct br_mdb_entry* entry;
+
+  struct br_port_msg* bpm;
+  bpm = nlmsg_data(nlh);
+  fprintf(stdout, " bpm new found %d\n", bpm->ifindex);
+
+  if(tb[MDBA_MDB_ENTRY]) {
+    fprintf(stdout, "1 exists\n");
+    struct nlattr *entry_attr[MDBA_MDB_MAX];
+
+    nla_parse_nested(entry_attr, MDBA_MDB_MAX, tb[MDBA_MDB_ENTRY], mdb_entry_policy);
+    if(entry_attr[MDBA_MDB_ENTRY_INFO]) {
+      fprintf(stdout, "2 exists\nsize %d\n", sizeof(entry_attr[MDBA_MDB_ENTRY_INFO]));
+
+      nla_memcpy((void*) entry, entry_attr[MDBA_MDB_ENTRY_INFO], sizeof(entry));
+      fprintf(stdout, " found ifindex %d\n", entry->ifindex);
+    }
+  }
+
   return 0;
 }
 
