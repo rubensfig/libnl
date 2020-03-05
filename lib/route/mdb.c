@@ -20,10 +20,6 @@ static struct nl_cache_ops rtnl_mdb_ops;
 static struct nl_object_ops mdb_obj_ops;
 /** @endcond */
 
-static void mdb_constructor(struct nl_object *obj)
-{
-}
-
 static void mdb_free_data(struct nl_object *obj)
 {
   // Cleans the functions
@@ -84,9 +80,10 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
 	int err = 0;
 
-  struct br_port_msg* bpm;
-  bpm = nlmsg_data(nlh);
-  int len = nlh->nlmsg_len;
+  struct rtnl_mdb* _mdb = rtnl_mdb_alloc();
+	if (!_mdb)
+		return -NLE_NOMEM;
+
   struct nlattr *tb[MDBA_MAX+1];
 	struct br_mdb_entry* entry;
 
@@ -100,10 +97,6 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
     if(db_attr[MDBA_MDB_ENTRY]) {
       struct nlattr *entry_attr[MDBA_MDB_ENTRY_MAX+1];
       
-      /*struct nlattr *  	tb[],*/
-      /*int  	maxtype,*/
-      /*struct nlattr *  	nla,*/
-      /*const struct nla_policy *  	policy*/
       nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
 
       entry = nla_data(entry_attr[MDBA_MDB_ENTRY_INFO]);
@@ -112,6 +105,8 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
       fprintf(stdout, "entry ifindex %04x\n", ntohs(entry->addr.proto));
     }
   }
+
+  /*err = pp->pp_cb((struct nl_object *) NULL, pp);*/
 
   return 0;
 }
@@ -268,11 +263,6 @@ static uint64_t mdb_compare(struct nl_object *_a, struct nl_object *_b,
 #endif
 }
 
-struct rtnl_mdb *rtnl_mdb_alloc(void)
-{
-	return (struct rtnl_mdb *) nl_object_alloc(&mdb_obj_ops);
-}
-
 void rtnl_mdb_put(struct rtnl_mdb *mdb)
 {
 	nl_object_put((struct nl_object *) mdb);
@@ -287,7 +277,6 @@ void rtnl_mdb_put(struct rtnl_mdb *mdb)
 
 int rtnl_mdb_alloc_cache(struct nl_sock *sk, struct nl_cache **result)
 {
-  printf("here");
 	return nl_cache_alloc_and_fill(&rtnl_mdb_ops, sk, result);
 }
 
@@ -438,9 +427,14 @@ static struct nl_object_ops mdb_obj_ops = {
 	.oo_dump = {
 	    [NL_DUMP_LINE] 	= mdb_dump_line,
 	    [NL_DUMP_DETAILS]	= mdb_dump_line,
-	    [NL_DUMP_STATS]	= mdb_dump_line,
 	},
 };
+
+struct rtnl_mdb *rtnl_mdb_alloc(void)
+{
+  return (struct rtnl_mdb *) nl_object_alloc(&mdb_obj_ops);
+}
+
 
 static struct nl_af_group mdb_groups[] = {
 	{ AF_BRIDGE,	RTNLGRP_MDB },

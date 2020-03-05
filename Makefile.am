@@ -105,6 +105,7 @@ libnlinclude_netlink_route_HEADERS = \
 	include/netlink/route/class.h \
 	include/netlink/route/classifier.h \
 	include/netlink/route/link.h \
+	include/netlink/route/mdb.h \
 	include/netlink/route/neighbour.h \
 	include/netlink/route/neightbl.h \
 	include/netlink/route/netconf.h \
@@ -116,7 +117,6 @@ libnlinclude_netlink_route_HEADERS = \
 	include/netlink/route/rule.h \
 	include/netlink/route/tc-api.h \
 	include/netlink/route/tc.h \
-	include/netlink/route/mdb.h \
 	$(NULL)
 libnlinclude_netlink_route_actdir = $(libnlincludedir)/netlink/route/act
 libnlinclude_netlink_route_act_HEADERS = \
