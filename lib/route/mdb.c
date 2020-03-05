@@ -67,6 +67,10 @@ static int mdb_clone(struct nl_object *_dst, struct nl_object *_src)
 }
 
 static struct nla_policy mdb_policy[MDBA_MAX+1] = {
+	[MDBA_MDB]	= { .type = NLA_NESTED },
+};
+
+static struct nla_policy mdb_db_policy[MDBA_MDB_MAX+1] = {
 	[MDBA_MDB_ENTRY]	= { .type = NLA_NESTED },
 };
 
@@ -78,26 +82,34 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 			   struct nlmsghdr *nlh, struct nl_parser_param *pp)
 {
 
-  struct nlattr *tb[MDBA_MAX+1];
 	int err = 0;
-
-	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy);
-	struct br_mdb_entry* entry;
 
   struct br_port_msg* bpm;
   bpm = nlmsg_data(nlh);
-  fprintf(stdout, " bpm new found %d\n", bpm->ifindex);
+  int len = nlh->nlmsg_len;
+  struct nlattr *tb[MDBA_MAX+1];
+	struct br_mdb_entry* entry;
 
-  if(tb[MDBA_MDB_ENTRY]) {
-    fprintf(stdout, "1 exists\n");
-    struct nlattr *entry_attr[MDBA_MDB_MAX];
+	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy); /*struct nlmsghdr *nlh, int hdrlen, struct nlattr *tb[], int maxtype, const struct nla_policy *policy*/
 
-    nla_parse_nested(entry_attr, MDBA_MDB_MAX, tb[MDBA_MDB_ENTRY], mdb_entry_policy);
-    if(entry_attr[MDBA_MDB_ENTRY_INFO]) {
-      fprintf(stdout, "2 exists\nsize %d\n", sizeof(entry_attr[MDBA_MDB_ENTRY_INFO]));
+  if(tb[MDBA_MDB]) {
+    struct nlattr *db_attr[MDBA_MDB_MAX+1];
 
-      nla_memcpy((void*) entry, entry_attr[MDBA_MDB_ENTRY_INFO], sizeof(entry));
-      fprintf(stdout, " found ifindex %d\n", entry->ifindex);
+    nla_parse_nested(db_attr, MDBA_MDB_MAX, tb[MDBA_MDB], mdb_db_policy); /* struct nlattr *tb[], int maxtype, struct nlattr *head, int len, const struct nla_policy *policy*/
+
+    if(db_attr[MDBA_MDB_ENTRY]) {
+      struct nlattr *entry_attr[MDBA_MDB_ENTRY_MAX+1];
+      
+      /*struct nlattr *  	tb[],*/
+      /*int  	maxtype,*/
+      /*struct nlattr *  	nla,*/
+      /*const struct nla_policy *  	policy*/
+      nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
+
+      entry = nla_data(entry_attr[MDBA_MDB_ENTRY_INFO]);
+
+      fprintf(stdout, "entry ifindex %d\n", entry->ifindex);
+      fprintf(stdout, "entry ifindex %04x\n", ntohs(entry->addr.proto));
     }
   }
 

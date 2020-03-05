@@ -65,13 +65,13 @@ struct br_port_msg {
 };
 
 struct br_mdb_entry {
-	__u32 ifindex;
+	uint32_t ifindex;
 #define MDB_TEMPORARY 0
 #define MDB_PERMANENT 1
-	__u8 state;
+	uint8_t state;
 #define MDB_FLAGS_OFFLOAD	(1 << 0)
-	__u8 flags;
-	__u16 vid;
+	uint8_t flags;
+	uint16_t vid;
 	struct {
 		union {
 			__be32	ip4;
