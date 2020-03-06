@@ -280,6 +280,37 @@ int rtnl_mdb_alloc_cache(struct nl_sock *sk, struct nl_cache **result)
 	return nl_cache_alloc_and_fill(&rtnl_mdb_ops, sk, result);
 }
 
+/**
+ * Build a neighbour cache including all neighbours currently configured in the kernel.
+ * @arg sock		Netlink socket.
+ * @arg result		Pointer to store resulting cache.
+ * @arg flags		Flags to apply to cache before filling
+ *
+ * Allocates a new neighbour cache, initializes it properly and updates it
+ * to include all neighbours currently configured in the kernel.
+ *
+ * @return 0 on success or a negative error code.
+ */
+int rtnl_mdb_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **result,
+				 unsigned int flags)
+{
+	struct nl_cache * cache;
+	int err;
+
+	cache = nl_cache_alloc(&rtnl_mdb_ops);
+	if (!cache)
+		return -NLE_NOMEM;
+
+	nl_cache_set_flags(cache, flags);
+
+	if (sock && (err = nl_cache_refill(sock, cache)) < 0) {
+		nl_cache_free(cache);
+		return err;
+	}
+
+	*result = cache;
+	return 0;
+}
 # if 0
 /**
  * Search for mdb entry in cache
@@ -438,8 +469,6 @@ struct rtnl_mdb *rtnl_mdb_alloc(void)
 
 static struct nl_af_group mdb_groups[] = {
 	{ AF_BRIDGE,	RTNLGRP_MDB },
-	{ AF_INET,	RTNLGRP_MDB },
-	{ AF_UNSPEC,	RTNLGRP_MDB },
 	{ END_OF_GROUP_LIST },
 };
 
@@ -453,8 +482,9 @@ static struct nl_cache_ops rtnl_mdb_ops = {
 					END_OF_MSGTYPES_LIST,
 				  },
 	.co_protocol		= NETLINK_ROUTE,
-  .co_msg_parser = mdb_msg_parser,
   .co_groups		= mdb_groups,
+  .co_request_update	= mdb_request_update,
+  .co_msg_parser = mdb_msg_parser,
 	.co_obj_ops		= &mdb_obj_ops,
 };
 

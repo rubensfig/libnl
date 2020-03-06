@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef NETADDR_ADDR_H_
-#define NETADDR_ADDR_H_
+#ifndef NETLINK_MDB_H_
+#define NETLINK_MDB_H_
 
 #include <netlink/netlink.h>
 #include <netlink/cache.h>
@@ -93,6 +93,7 @@ struct rtnl_mdb *rtnl_mdb_alloc(void);
 void rtnl_mdb_put(struct rtnl_mdb *mdb);
 
 int rtnl_mdb_alloc_cache(struct nl_sock *sk, struct nl_cache **result);
+int rtnl_mdb_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **result, unsigned int flags);
 int rtnl_mdb_build_add_request(/*struct rtnl_addr *addr, int flags,*/
 				/*struct nl_msg **result*/);
 int rtnl_mdb_add();
