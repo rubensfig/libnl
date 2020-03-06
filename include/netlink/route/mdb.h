@@ -1,4 +1,5 @@
-/* netlink/route/mdb.c
+/*
+ *  netlink/route/mdb.c
  *
  *	This library is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU Lesser General Public
@@ -86,8 +87,8 @@ enum {
 	MDBA_SET_ENTRY,
 	__MDBA_SET_ENTRY_MAX,
 };
-
 #define MDBA_SET_ENTRY_MAX (__MDBA_SET_ENTRY_MAX - 1)
+
 struct rtnl_mdb *rtnl_mdb_alloc(void);
 void rtnl_mdb_put(struct rtnl_mdb *mdb);
 
