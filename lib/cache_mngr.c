@@ -445,6 +445,7 @@ int nl_cache_mngr_add(struct nl_cache_mngr *mngr, const char *name,
 	if (!cache)
 		return -NLE_NOMEM;
 
+  /* mngr, "route/mdb", &change_cb, NULL, &cache */
 	err = nl_cache_mngr_add_cache(mngr, cache, cb, data);
 	if (err < 0)
 		goto errout_free_cache;

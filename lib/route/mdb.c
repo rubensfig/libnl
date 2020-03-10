@@ -20,6 +20,11 @@ static struct nl_cache_ops rtnl_mdb_ops;
 static struct nl_object_ops mdb_obj_ops;
 /** @endcond */
 
+static void mdb_constructor(struct nl_object *obj)
+{
+	struct rtnl_mdb *mdb = nl_object_priv(obj);
+}
+
 static void mdb_free_data(struct nl_object *obj)
 {
   // Cleans the functions
@@ -89,6 +94,8 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
 	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy); /*struct nlmsghdr *nlh, int hdrlen, struct nlattr *tb[], int maxtype, const struct nla_policy *policy*/
 
+  _mdb->ce_msgtype = nlh->nlmsg_type;
+
   if(tb[MDBA_MDB]) {
     struct nlattr *db_attr[MDBA_MDB_MAX+1];
 
@@ -106,7 +113,7 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
     }
   }
 
-  /*err = pp->pp_cb((struct nl_object *) NULL, pp);*/
+  err = pp->pp_cb((struct nl_object *) _mdb, pp);
 
   return 0;
 }
@@ -454,7 +461,8 @@ int rtnl_mdb_set_attribute(/*struct rtnl_addr *addr, const char *label*/)
 
 static struct nl_object_ops mdb_obj_ops = {
 	.oo_name		= "route/mdb",
-	.oo_size		= sizeof(struct br_mdb_entry),
+	.oo_size		= sizeof(struct rtnl_mdb), // FIX ME
+  .oo_constructor		= mdb_constructor,
 	.oo_dump = {
 	    [NL_DUMP_LINE] 	= mdb_dump_line,
 	    [NL_DUMP_DETAILS]	= mdb_dump_line,
@@ -474,7 +482,7 @@ static struct nl_af_group mdb_groups[] = {
 
 static struct nl_cache_ops rtnl_mdb_ops = {
 	.co_name		= "route/mdb",
-	.co_hdrsize		= sizeof(struct br_mdb_entry),
+	.co_hdrsize		= 10, // FIX ME
 	.co_msgtypes		= {
 					{ RTM_NEWMDB, NL_ACT_NEW, "new"},
 					{ RTM_DELMDB, NL_ACT_DEL, "del"},

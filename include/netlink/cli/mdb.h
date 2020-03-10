@@ -15,7 +15,7 @@
 #include <netlink/route/mdb.h>
 
 #define nl_cli_mdb_alloc_cache(sk) \
-		nl_cli_alloc_cache((sk), "mdb", rtnl_mdb_alloc_cache)
+		nl_cli_alloc_cache_flags((sk), "mdb", NL_CACHE_AF_ITER, rtnl_mdb_alloc_cache)
 
 //extern struct rtnl_mdb *nl_cli_mdb_alloc(void);
 

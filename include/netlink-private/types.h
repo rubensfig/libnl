@@ -1338,4 +1338,11 @@ struct rtnl_vlan
 	uint32_t       v_flags;
 };
 
+
+struct rtnl_mdb
+{
+	NLHDR_COMMON
+
+	uint32_t	a_ifindex;
+};
 #endif

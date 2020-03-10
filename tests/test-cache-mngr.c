@@ -47,10 +47,10 @@ int main(int argc, char *argv[])
 		nl_cli_fatal(err, "Unable to allocate cache manager: %s",
 			     nl_geterror(err));
 
-  err = nl_cache_mngr_add(mngr, argv[1], &change_cb, NULL, &cache);
+  err = nl_cache_mngr_add(mngr, "route/mdb", &change_cb, NULL, &cache);
   if (err < 0)
     nl_cli_fatal(err, "Unable to add cache %s: %s",
-           argv[0], nl_geterror(err));
+           "route/mdb", nl_geterror(err));
 #if 0
 	for (i = 1; i < argc; i++) {
 		err = nl_cache_mngr_add(mngr, argv[i], &change_cb, NULL, &cache);
