@@ -21,6 +21,8 @@ extern "C" {
 
 struct rtnl_mdb_entry;
 
+// DOES NOT BELONG HERE
+//
 /* Bridge multicast database attributes
  * [MDBA_MDB] = {
  *     [MDBA_MDB_ENTRY] = {
@@ -61,18 +63,18 @@ enum {
 #define MDBA_MDB_ENTRY_MAX (__MDBA_MDB_ENTRY_MAX - 1)
 
 struct br_port_msg {
-	__u8  family;
-	__u32 ifindex;
+	uint8_t  family;
+	uint32_t ifindex;
 };
 
 struct br_mdb_entry {
-	uint32_t ifindex;
+	__u32 ifindex;
 #define MDB_TEMPORARY 0
 #define MDB_PERMANENT 1
-	uint8_t state;
+	__u8 state;
 #define MDB_FLAGS_OFFLOAD	(1 << 0)
-	uint8_t flags;
-	uint16_t vid;
+	__u8 flags;
+	__u16 vid;
 	struct {
 		union {
 			__be32	ip4;
@@ -88,6 +90,7 @@ enum {
 	__MDBA_SET_ENTRY_MAX,
 };
 #define MDBA_SET_ENTRY_MAX (__MDBA_SET_ENTRY_MAX - 1)
+// DOES NOT BELONG HERE
 
 struct rtnl_mdb *rtnl_mdb_alloc(void);
 void rtnl_mdb_put(struct rtnl_mdb *mdb);
@@ -97,6 +100,9 @@ int rtnl_mdb_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **result, u
 int rtnl_mdb_build_add_request(/*struct rtnl_addr *addr, int flags,*/
 				/*struct nl_msg **result*/);
 int rtnl_mdb_add();
+
+uint32_t rtnl_mdb_get_ifindex(struct rtnl_mdb *mdb);
+uint8_t rtnl_mdb_get_family(struct rtnl_mdb *mdb);
 
 #ifdef __cplusplus
 }

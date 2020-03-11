@@ -1343,6 +1343,17 @@ struct rtnl_mdb
 {
 	NLHDR_COMMON
 
-	uint32_t	a_ifindex;
+	uint32_t	ifindex;
+	uint8_t	  family;
+
+	struct nl_list_head             mdb_entry_list;
+};
+
+struct rtnl_mdb_entry
+{
+	uint32_t	ifindex;
+	uint16_t	vid;
+  struct nl_addr *addr;
+  uint16_t  proto;
 };
 #endif

@@ -20,11 +20,6 @@ static struct nl_cache_ops rtnl_mdb_ops;
 static struct nl_object_ops mdb_obj_ops;
 /** @endcond */
 
-static void mdb_constructor(struct nl_object *obj)
-{
-	struct rtnl_mdb *mdb = nl_object_priv(obj);
-}
-
 static void mdb_free_data(struct nl_object *obj)
 {
   // Cleans the functions
@@ -95,6 +90,15 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy); /*struct nlmsghdr *nlh, int hdrlen, struct nlattr *tb[], int maxtype, const struct nla_policy *policy*/
 
   _mdb->ce_msgtype = nlh->nlmsg_type;
+  struct br_port_msg *_port;
+  _port = nlmsg_data(nlh);
+
+  _mdb->ifindex = _port->ifindex;
+  _mdb->family = _port->family;
+
+  printf("_port ifindex %d\n", _port->ifindex);
+  printf("_mdb ifindex %d\n", _mdb->ifindex);
+  printf("_port family  %d\n", _port->family);
 
   if(tb[MDBA_MDB]) {
     struct nlattr *db_attr[MDBA_MDB_MAX+1];
@@ -103,16 +107,22 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
     if(db_attr[MDBA_MDB_ENTRY]) {
       struct nlattr *entry_attr[MDBA_MDB_ENTRY_MAX+1];
+      struct rtnl_mdb_entry *_nentry;
       
       nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
 
       entry = nla_data(entry_attr[MDBA_MDB_ENTRY_INFO]);
 
-      fprintf(stdout, "entry ifindex %d\n", entry->ifindex);
-      fprintf(stdout, "entry ifindex %04x\n", ntohs(entry->addr.proto));
+      printf("entry ifindex %d\n", entry->ifindex);
+      printf("entry proto 0x%04x\n", ntohs(entry->addr.proto));
+      printf("entry addr %04x\n", ntohs(entry->addr.u.ip4));
+
+      _nentry->ifindex = entry->ifindex;
+      nl_init_list_head(_mdb->mdb_entry_list);
     }
   }
 
+  printf("_mdb ifindex %d\n", _mdb->ifindex);
   err = pp->pp_cb((struct nl_object *) _mdb, pp);
 
   return 0;
@@ -125,45 +135,7 @@ static int mdb_request_update(struct nl_cache *cache, struct nl_sock *sk)
 
 static void mdb_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 {
-#if 0
-	struct rtnl_addr *addr = (struct rtnl_addr *) obj;
-	struct nl_cache *link_cache;
-	char buf[128];
-
-	link_cache = nl_cache_mngt_require_safe("route/link");
-
-	if (addr->ce_mask & ADDR_ATTR_LOCAL)
-		nl_dump_line(p, "%s",
-			nl_addr2str(addr->a_local, buf, sizeof(buf)));
-	else
-		nl_dump_line(p, "none");
-
-	if (addr->ce_mask & ADDR_ATTR_PEER)
-		nl_dump(p, " peer %s",
-			nl_addr2str(addr->a_peer, buf, sizeof(buf)));
-
-	nl_dump(p, " %s ", nl_af2str(addr->a_family, buf, sizeof(buf)));
-
-	if (link_cache)
-		nl_dump(p, "dev %s ",
-			rtnl_link_i2name(link_cache, addr->a_ifindex,
-					 buf, sizeof(buf)));
-	else
-		nl_dump(p, "dev %d ", addr->a_ifindex);
-
-	nl_dump(p, "scope %s",
-		rtnl_scope2str(addr->a_scope, buf, sizeof(buf)));
-
-	rtnl_addr_flags2str(addr->a_flags, buf, sizeof(buf));
-	if (buf[0])
-		nl_dump(p, " <%s>", buf);
-
-	nl_dump(p, "\n");
-
-	if (link_cache)
-		nl_cache_put(link_cache);
-#endif
-  printf("mdb print line");
+  printf("mdb dump line\n");
 }
 
 static void mdb_dump_details(struct nl_object *obj, struct nl_dump_params *p)
@@ -220,6 +192,8 @@ static void mdb_dump_details(struct nl_object *obj, struct nl_dump_params *p)
 				      buf, sizeof(buf)));
 	}
 #endif
+
+  printf("mdb dump details");
 }
 
 static uint64_t mdb_compare(struct nl_object *_a, struct nl_object *_b,
@@ -457,15 +431,23 @@ int rtnl_mdb_set_attribute(/*struct rtnl_addr *addr, const char *label*/)
 	return 0;
 }
 
+uint32_t rtnl_mdb_get_ifindex(struct rtnl_mdb *mdb)
+{
+	return mdb->ifindex;
+}
+
+uint8_t rtnl_mdb_get_family(struct rtnl_mdb *mdb)
+{
+	return mdb->family;
+}
 /** @} */
 
 static struct nl_object_ops mdb_obj_ops = {
 	.oo_name		= "route/mdb",
 	.oo_size		= sizeof(struct rtnl_mdb), // FIX ME
-  .oo_constructor		= mdb_constructor,
 	.oo_dump = {
 	    [NL_DUMP_LINE] 	= mdb_dump_line,
-	    [NL_DUMP_DETAILS]	= mdb_dump_line,
+	    [NL_DUMP_DETAILS]	= mdb_dump_details,
 	},
 };
 
