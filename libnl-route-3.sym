@@ -1153,4 +1153,7 @@ global:
 	rtnl_mdb_alloc_cache_flags;
 	rtnl_mdb_get_ifindex;
 	rtnl_mdb_get_family;
+	rtnl_mdb_add_entry;
+	rtnl_mdb_foreach_entry;
+  rtnl_mdb_entry_get_ifindex;
 } libnl_3_4;

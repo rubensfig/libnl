@@ -1355,5 +1355,7 @@ struct rtnl_mdb_entry
 	uint16_t	vid;
   struct nl_addr *addr;
   uint16_t  proto;
+
+  struct nl_list_head   mdb_list;
 };
 #endif

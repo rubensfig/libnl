@@ -25,6 +25,13 @@ static void mdb_free_data(struct nl_object *obj)
   // Cleans the functions
 }
 
+static void mdb_constructor(struct nl_object *obj)
+{
+  struct rtnl_mdb *_mdb = (struct rtnl_mdb *)obj;
+
+  nl_init_list_head(&_mdb->mdb_entry_list);
+}
+
 // clones the mdb object
 static int mdb_clone(struct nl_object *_dst, struct nl_object *_src)
 {
@@ -107,7 +114,7 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
     if(db_attr[MDBA_MDB_ENTRY]) {
       struct nlattr *entry_attr[MDBA_MDB_ENTRY_MAX+1];
-      struct rtnl_mdb_entry *_nentry;
+      struct rtnl_mdb_entry *_nentry = rtnl_mdb_entry_alloc();
       
       nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
 
@@ -115,14 +122,14 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
       printf("entry ifindex %d\n", entry->ifindex);
       printf("entry proto 0x%04x\n", ntohs(entry->addr.proto));
-      printf("entry addr %04x\n", ntohs(entry->addr.u.ip4));
 
       _nentry->ifindex = entry->ifindex;
-      nl_init_list_head(_mdb->mdb_entry_list);
+      _nentry->vid = entry->vid;
+
+      rtnl_mdb_add_entry(_mdb, _nentry);
     }
   }
 
-  printf("_mdb ifindex %d\n", _mdb->ifindex);
   err = pp->pp_cb((struct nl_object *) _mdb, pp);
 
   return 0;
@@ -133,115 +140,35 @@ static int mdb_request_update(struct nl_cache *cache, struct nl_sock *sk)
 	return nl_rtgen_request(sk, RTM_GETMDB, AF_BRIDGE, NLM_F_DUMP);
 }
 
+static void mdb_entry_dump_line(struct rtnl_mdb_entry *entry, struct nl_dump_params *p) {
+  printf("mdb entry dump line: ifindex %d\n", entry->ifindex);
+  printf("mdb entry dump line: vid %d\n", entry->vid);
+}
+
 static void mdb_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 {
   printf("mdb dump line\n");
+  printf("\n");
+  struct rtnl_mdb *mdb = (struct rtnl_mdb *) obj;
+
+  printf("mdb dump line: ifindex%d\n", mdb->ifindex);  
+
+  struct rtnl_mdb_entry* _mdb;
+	nl_list_for_each_entry(_mdb, &mdb->mdb_entry_list, mdb_list) {
+		p->dp_ivar = NH_DUMP_FROM_ONELINE;
+		mdb_entry_dump_line(_mdb, p);
+	}
 }
 
 static void mdb_dump_details(struct nl_object *obj, struct nl_dump_params *p)
 {
-#if 0
-	struct rtnl_addr *addr = (struct rtnl_addr *) obj;
-	char buf[128];
-
-	addr_dump_line(obj, p);
-
-	if (addr->ce_mask & (ADDR_ATTR_LABEL | ADDR_ATTR_BROADCAST |
-			     ADDR_ATTR_MULTICAST)) {
-		nl_dump_line(p, "  ");
-
-		if (addr->ce_mask & ADDR_ATTR_LABEL)
-			nl_dump(p, " label %s", addr->a_label);
-
-		if (addr->ce_mask & ADDR_ATTR_BROADCAST)
-			nl_dump(p, " broadcast %s",
-				nl_addr2str(addr->a_bcast, buf, sizeof(buf)));
-
-		if (addr->ce_mask & ADDR_ATTR_MULTICAST)
-			nl_dump(p, " multicast %s",
-				nl_addr2str(addr->a_multicast, buf,
-					      sizeof(buf)));
-
-		if (addr->ce_mask & ADDR_ATTR_ANYCAST)
-			nl_dump(p, " anycast %s",
-				nl_addr2str(addr->a_anycast, buf,
-					      sizeof(buf)));
-
-		nl_dump(p, "\n");
-	}
-
-	if (addr->ce_mask & ADDR_ATTR_CACHEINFO) {
-		struct rtnl_addr_cacheinfo *ci = &addr->a_cacheinfo;
-
-		nl_dump_line(p, "   valid-lifetime %s",
-			     ci->aci_valid == 0xFFFFFFFFU ? "forever" :
-			     nl_msec2str(ci->aci_valid * 1000,
-					   buf, sizeof(buf)));
-
-		nl_dump(p, " preferred-lifetime %s\n",
-			ci->aci_prefered == 0xFFFFFFFFU ? "forever" :
-			nl_msec2str(ci->aci_prefered * 1000,
-				      buf, sizeof(buf)));
-
-		nl_dump_line(p, "   created boot-time+%s ",
-			     nl_msec2str(addr->a_cacheinfo.aci_cstamp * 10,
-					   buf, sizeof(buf)));
-		    
-		nl_dump(p, "last-updated boot-time+%s\n",
-			nl_msec2str(addr->a_cacheinfo.aci_tstamp * 10,
-				      buf, sizeof(buf)));
-	}
-#endif
-
   printf("mdb dump details");
 }
 
 static uint64_t mdb_compare(struct nl_object *_a, struct nl_object *_b,
 			     uint64_t attrs, int flags)
 {
-#if 0 
-	struct rtnl_addr *a = (struct rtnl_addr *) _a;
-	struct rtnl_addr *b = (struct rtnl_addr *) _b;
-	uint64_t diff = 0;
-
-#define ADDR_DIFF(ATTR, EXPR) ATTR_DIFF(attrs, ADDR_ATTR_##ATTR, a, b, EXPR)
-
-	diff |= ADDR_DIFF(IFINDEX,	a->a_ifindex != b->a_ifindex);
-	diff |= ADDR_DIFF(FAMILY,	a->a_family != b->a_family);
-	diff |= ADDR_DIFF(SCOPE,	a->a_scope != b->a_scope);
-	diff |= ADDR_DIFF(LABEL,	strcmp(a->a_label, b->a_label));
-	if (attrs & ADDR_ATTR_PEER) {
-		if (   (flags & ID_COMPARISON)
-		    && a->a_family == AF_INET
-		    && b->a_family == AF_INET
-		    && a->a_peer
-		    && b->a_peer
-		    && a->a_prefixlen == b->a_prefixlen) {
-			/* when comparing two IPv4 addresses for id-equality, the network part
-			 * of the PEER address shall be compared.
-			 */
-			diff |= ADDR_DIFF(PEER, nl_addr_cmp_prefix(a->a_peer, b->a_peer));
-		} else
-			diff |= ADDR_DIFF(PEER, nl_addr_cmp(a->a_peer, b->a_peer));
-	}
-	diff |= ADDR_DIFF(LOCAL,	nl_addr_cmp(a->a_local, b->a_local));
-	diff |= ADDR_DIFF(MULTICAST,	nl_addr_cmp(a->a_multicast,
-						    b->a_multicast));
-	diff |= ADDR_DIFF(BROADCAST,	nl_addr_cmp(a->a_bcast, b->a_bcast));
-	diff |= ADDR_DIFF(ANYCAST,	nl_addr_cmp(a->a_anycast, b->a_anycast));
-	diff |= ADDR_DIFF(CACHEINFO,    memcmp(&a->a_cacheinfo, &b->a_cacheinfo,
-	                                       sizeof (a->a_cacheinfo)));
-
-	if (flags & LOOSE_COMPARISON)
-		diff |= ADDR_DIFF(FLAGS,
-				  (a->a_flags ^ b->a_flags) & b->a_flag_mask);
-	else
-		diff |= ADDR_DIFF(FLAGS, a->a_flags != b->a_flags);
-
-#undef ADDR_DIFF
-
-	return diff;
-#endif
+  return 0;
 }
 
 void rtnl_mdb_put(struct rtnl_mdb *mdb)
@@ -440,11 +367,33 @@ uint8_t rtnl_mdb_get_family(struct rtnl_mdb *mdb)
 {
 	return mdb->family;
 }
+
+void rtnl_mdb_add_entry(struct rtnl_mdb *mdb, struct rtnl_mdb_entry *entry) {
+  nl_list_add_tail(&entry->mdb_list ,&mdb->mdb_entry_list);
+}
+
+void rtnl_mdb_foreach_entry(struct rtnl_mdb *mdb,
+                            void (*cb)(struct rtnl_mdb_entry *, void *),
+                            void *arg ) {
+  struct rtnl_mdb_entry * entry;
+  nl_list_for_each_entry(entry, &mdb->mdb_entry_list, mdb_list) {
+			cb(entry, arg);
+		}
+}
+
+int rtnl_mdb_entry_get_ifindex(struct rtnl_mdb_entry *mdb_entry) {
+  return mdb_entry->ifindex;
+}
+
+int rtnl_mdb_entry_get_vid(struct rtnl_mdb_entry *mdb_entry) {
+  return mdb_entry->vid;
+}
 /** @} */
 
 static struct nl_object_ops mdb_obj_ops = {
 	.oo_name		= "route/mdb",
 	.oo_size		= sizeof(struct rtnl_mdb), // FIX ME
+  .oo_constructor = mdb_constructor,
 	.oo_dump = {
 	    [NL_DUMP_LINE] 	= mdb_dump_line,
 	    [NL_DUMP_DETAILS]	= mdb_dump_details,
@@ -456,6 +405,18 @@ struct rtnl_mdb *rtnl_mdb_alloc(void)
   return (struct rtnl_mdb *) nl_object_alloc(&mdb_obj_ops);
 }
 
+static struct nl_object_ops mdb_entry_obj_ops = {
+	.oo_name		= "route/mdb_entry",
+	.oo_size		= sizeof(struct rtnl_mdb_entry),
+};
+
+struct rtnl_mdb_entry *rtnl_mdb_entry_alloc(void)
+{
+  struct rtnl_mdb_entry *_entry;
+  
+  _entry = calloc(1, sizeof(*_entry));
+  return _entry;  
+}
 
 static struct nl_af_group mdb_groups[] = {
 	{ AF_BRIDGE,	RTNLGRP_MDB },

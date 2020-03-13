@@ -100,10 +100,22 @@ int rtnl_mdb_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **result, u
 int rtnl_mdb_build_add_request(/*struct rtnl_addr *addr, int flags,*/
 				/*struct nl_msg **result*/);
 int rtnl_mdb_add();
+struct rtnl_mdb_entry *rtnl_mdb_entry_alloc(void);
 
 uint32_t rtnl_mdb_get_ifindex(struct rtnl_mdb *mdb);
 uint8_t rtnl_mdb_get_family(struct rtnl_mdb *mdb);
 
+void rtnl_mdb_add_entry(struct rtnl_mdb *mdb, struct rtnl_mdb_entry *_entry);
+
+void rtnl_mdb_foreach_entry(struct rtnl_mdb *_mdb,
+                            void (*cb)(struct rtnl_mdb_entry *, void *),
+                            void *arg);
+//struct nl_list_head * rtnl_mdb_get_entries(struct rtnl_mdb *mdb);
+void rtnl_mdb_foreach_entry(struct rtnl_mdb *mdb,
+                            void (*cb)(struct rtnl_mdb_entry *, void *),
+                            void *arg );
+
+int rtnl_mdb_entry_get_ifindex(struct rtnl_mdb_entry *mdb_entry);
 #ifdef __cplusplus
 }
 #endif

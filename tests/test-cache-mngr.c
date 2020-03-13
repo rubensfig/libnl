@@ -59,6 +59,13 @@ int main(int argc, char *argv[])
 				     argv[i], nl_geterror(err));
 	}
 #endif
+  while(!quit) {
+		int err = nl_cache_mngr_poll(mngr, 1000);
+		if (err < 0 && err != -NLE_INTR)
+			nl_cli_fatal(err, "Polling failed: %s", nl_geterror(err));
+
+		nl_cache_mngr_info(mngr, &dp);
+  }
 
 	return 0;
 }
