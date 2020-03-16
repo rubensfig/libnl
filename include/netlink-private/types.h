@@ -1352,6 +1352,7 @@ struct rtnl_mdb
 struct rtnl_mdb_entry
 {
 	uint32_t	ifindex;
+	uint8_t	  state;
 	uint16_t	vid;
   struct nl_addr *addr;
   uint16_t  proto;
