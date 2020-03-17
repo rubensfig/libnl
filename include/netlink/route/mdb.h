@@ -119,6 +119,7 @@ int rtnl_mdb_entry_get_ifindex(struct rtnl_mdb_entry *mdb_entry);
 int rtnl_mdb_entry_get_vid(struct rtnl_mdb_entry *mdb_entry);
 int rtnl_mdb_entry_get_state(struct rtnl_mdb_entry *mdb_entry);
 struct nl_addr * rtnl_mdb_entry_get_addr(struct rtnl_mdb_entry *mdb_entry);
+struct nl_addr * rtnl_mdb_entry_get_proto(struct rtnl_mdb_entry *mdb_entry);
 #ifdef __cplusplus
 }
 #endif

@@ -92,7 +92,6 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 		return -NLE_NOMEM;
 
   struct nlattr *tb[MDBA_MAX+1];
-	struct br_mdb_entry* entry;
 
 	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy); /*struct nlmsghdr *nlh, int hdrlen, struct nlattr *tb[], int maxtype, const struct nla_policy *policy*/
 
@@ -102,10 +101,6 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
   _mdb->ifindex = _port->ifindex;
   _mdb->family = _port->family;
-
-  printf("_port ifindex %d\n", _port->ifindex);
-  printf("_mdb ifindex %d\n", _mdb->ifindex);
-  printf("_port family  %d\n", _port->family);
 
   if(tb[MDBA_MDB]) {
     struct nlattr *db_attr[MDBA_MDB_MAX+1];
@@ -118,13 +113,18 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
       
       nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
 
+	    struct br_mdb_entry* entry;
       entry = nla_data(entry_attr[MDBA_MDB_ENTRY_INFO]);
-
-      printf("entry ifindex %d\n", entry->ifindex);
-      printf("entry proto 0x%04x\n", ntohs(entry->addr.proto));
 
       _nentry->ifindex = entry->ifindex;
       _nentry->vid = entry->vid;
+      _nentry->state = entry->state;
+      _nentry->proto = ntohs(entry->addr.proto);
+
+      // debugging
+      struct nl_addr * _addr = nl_addr_alloc(255);
+      nl_addr_parse("239.0.1.13", AF_INET, &_addr);
+      _nentry->addr = _addr;
 
       rtnl_mdb_add_entry(_mdb, _nentry);
     }
@@ -143,15 +143,15 @@ static int mdb_request_update(struct nl_cache *cache, struct nl_sock *sk)
 static void mdb_entry_dump_line(struct rtnl_mdb_entry *entry, struct nl_dump_params *p) {
   printf("mdb entry dump line: ifindex %d\n", entry->ifindex);
   printf("mdb entry dump line: vid %d\n", entry->vid);
+  printf("mdb entry dump line: proto 0x%04x\n", entry->proto);
 }
 
 static void mdb_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 {
-  printf("mdb dump line\n");
-  printf("\n");
   struct rtnl_mdb *mdb = (struct rtnl_mdb *) obj;
 
-  printf("mdb dump line: ifindex%d\n", mdb->ifindex);  
+  printf("mdb dump line: ifindex : %d\n", mdb->ifindex);
+  printf("mdb dump line: family  : %d\n", mdb->family);
 
   struct rtnl_mdb_entry* _mdb;
 	nl_list_for_each_entry(_mdb, &mdb->mdb_entry_list, mdb_list) {
@@ -234,7 +234,6 @@ struct rtnl_mdb *rtnl_mdb_get(struct nl_cache *cache, int ifindex,
 	return NULL;
 }
 #endif
-
 /** @} */
 
 static int build_addr_msg()
@@ -387,6 +386,18 @@ int rtnl_mdb_entry_get_ifindex(struct rtnl_mdb_entry *mdb_entry) {
 
 int rtnl_mdb_entry_get_vid(struct rtnl_mdb_entry *mdb_entry) {
   return mdb_entry->vid;
+}
+
+int rtnl_mdb_entry_get_state(struct rtnl_mdb_entry *mdb_entry) {
+  return mdb_entry->state;
+}
+
+struct nl_addr * rtnl_mdb_entry_get_addr(struct rtnl_mdb_entry *mdb_entry) {
+  return mdb_entry->addr;
+}
+
+struct nl_addr * rtnl_mdb_entry_get_proto(struct rtnl_mdb_entry *mdb_entry) {
+  return mdb_entry->proto;
 }
 /** @} */
 

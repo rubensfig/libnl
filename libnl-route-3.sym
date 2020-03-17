@@ -1156,4 +1156,8 @@ global:
 	rtnl_mdb_add_entry;
 	rtnl_mdb_foreach_entry;
   rtnl_mdb_entry_get_ifindex;
+  rtnl_mdb_entry_get_vid;
+  rtnl_mdb_entry_get_state;
+  rtnl_mdb_entry_get_addr;
+  rtnl_mdb_entry_get_proto;
 } libnl_3_4;

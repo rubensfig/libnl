@@ -25,3 +25,8 @@ cscope.*
 /configure
 /libtool
 /*.pc
+.swp
+.swo
+*.swo
+.*.swo
+.*.swp
