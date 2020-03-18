@@ -119,11 +119,15 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
       _nentry->ifindex = entry->ifindex;
       _nentry->vid = entry->vid;
       _nentry->state = entry->state;
-      _nentry->proto = ntohs(entry->addr.proto);
+
+      // TODO Fix __be16 proto and __be32 ip4 assigment
+      // Try ip6?
+      _nentry->proto = entry->addr.proto;
 
       // debugging
       struct nl_addr * _addr = nl_addr_alloc(255);
-      nl_addr_parse("239.0.1.13", AF_INET, &_addr);
+      uint32_t _naddr = htons(entry->addr.u.ip4);
+      nl_addr_parse(_naddr, AF_INET, &_addr);
       _nentry->addr = _addr;
 
       rtnl_mdb_add_entry(_mdb, _nentry);
@@ -396,7 +400,7 @@ struct nl_addr * rtnl_mdb_entry_get_addr(struct rtnl_mdb_entry *mdb_entry) {
   return mdb_entry->addr;
 }
 
-struct nl_addr * rtnl_mdb_entry_get_proto(struct rtnl_mdb_entry *mdb_entry) {
+uint16_t rtnl_mdb_entry_get_proto(struct rtnl_mdb_entry *mdb_entry) {
   return mdb_entry->proto;
 }
 /** @} */
