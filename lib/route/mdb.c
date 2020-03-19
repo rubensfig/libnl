@@ -120,15 +120,20 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
       _nentry->vid = entry->vid;
       _nentry->state = entry->state;
 
-      // TODO Fix __be16 proto and __be32 ip4 assigment
-      // Try ip6?
-      _nentry->proto = entry->addr.proto;
+      _nentry->proto = ntohs(entry->addr.proto);
 
-      // debugging
-      struct nl_addr * _addr = nl_addr_alloc(255);
-      uint32_t _naddr = htons(entry->addr.u.ip4);
-      nl_addr_parse(_naddr, AF_INET, &_addr);
-      _nentry->addr = _addr;
+      uint32_t _addr = 0;
+      if (_nentry->proto == ETH_P_IP) {
+          char _mcast_address[INET_ADDRSTRLEN]= "";
+
+          inet_ntop(AF_INET, &entry->addr.u.ip4, _mcast_address, INET_ADDRSTRLEN);
+          nl_addr_parse(_mcast_address, AF_INET, &_nentry->addr);
+      } else if(_nentry->proto == ETH_P_IPV6) {
+          char _mcast_6address[INET6_ADDRSTRLEN]= "";
+
+          inet_ntop(AF_INET6, &entry->addr.u.ip6, _mcast_6address, INET6_ADDRSTRLEN);
+          nl_addr_parse(_mcast_6address, AF_INET6, &_nentry->addr);
+      }
 
       rtnl_mdb_add_entry(_mdb, _nentry);
     }
