@@ -84,19 +84,17 @@ static struct nla_policy mdb_entry_policy[MDBA_MDB_ENTRY_MAX+1] = {
 static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 			   struct nlmsghdr *nlh, struct nl_parser_param *pp)
 {
-
-	int err = 0;
+  struct nlattr *tb[MDBA_MAX+1];
+  struct br_port_msg *_port;
+	struct br_mdb_entry* entry;
 
   struct rtnl_mdb* _mdb = rtnl_mdb_alloc();
 	if (!_mdb)
 		return -NLE_NOMEM;
 
-  struct nlattr *tb[MDBA_MAX+1];
-
 	err = nlmsg_parse(nlh, sizeof(struct br_port_msg), tb, MDBA_MAX, mdb_policy); /*struct nlmsghdr *nlh, int hdrlen, struct nlattr *tb[], int maxtype, const struct nla_policy *policy*/
 
   _mdb->ce_msgtype = nlh->nlmsg_type;
-  struct br_port_msg *_port;
   _port = nlmsg_data(nlh);
 
   _mdb->ifindex = _port->ifindex;
@@ -113,7 +111,6 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
       
       nla_parse_nested(entry_attr, MDBA_MDB_ENTRY_MAX, db_attr[MDBA_MDB_ENTRY], mdb_entry_policy);
 
-	    struct br_mdb_entry* entry;
       entry = nla_data(entry_attr[MDBA_MDB_ENTRY_INFO]);
 
       _nentry->ifindex = entry->ifindex;
@@ -122,7 +119,6 @@ static int mdb_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 
       _nentry->proto = ntohs(entry->addr.proto);
 
-      uint32_t _addr = 0;
       if (_nentry->proto == ETH_P_IP) {
           char _mcast_address[INET_ADDRSTRLEN]= "";
 
