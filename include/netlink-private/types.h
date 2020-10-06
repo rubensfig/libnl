@@ -217,8 +217,10 @@ struct rtnl_link
 	char *				l_info_kind;
 	char *				l_info_slave_kind;
 	struct rtnl_link_info_ops *	l_info_ops;
+	struct rtnl_link_info_ops *	l_info_slave_ops;
 	void *				l_af_data[AF_MAX];
 	void *				l_info;
+	void *				l_info_slave;
 	char *				l_ifalias;
 	uint32_t			l_promiscuity;
 	uint32_t			l_num_tx_queues;

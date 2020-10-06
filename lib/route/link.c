@@ -263,12 +263,29 @@ static void release_link_info(struct rtnl_link *link)
 	}
 }
 
+static void release_link_info_slave(struct rtnl_link *link)
+{
+	struct rtnl_link_info_ops *io = link->l_info_slave_ops;
+
+	if (io != NULL) {
+		if (io->io_slave_free)
+			io->io_slave_free(link);
+		else {
+			/* Catch missing io_free() implementations */
+			BUG_ON(link->l_info_slave);
+		}
+		rtnl_link_info_ops_put(io);
+		link->l_info_slave_ops = NULL;
+	}
+}
+
 static void link_free_data(struct nl_object *c)
 {
 	struct rtnl_link *link = nl_object_priv(c);
 
 	if (link) {
 		release_link_info(link);
+		release_link_info_slave(link);
 
 		/* proto info af reference */
 		rtnl_link_af_ops_put(link->l_af_ops);
@@ -318,6 +335,12 @@ static int link_clone(struct nl_object *_dst, struct nl_object *_src)
 
 	if (src->l_info_ops && src->l_info_ops->io_clone) {
 		err = src->l_info_ops->io_clone(dst, src);
+		if (err < 0)
+			return err;
+	}
+
+	if (src->l_info_slave_ops && src->l_info_ops->io_slave_clone) {
+		err = src->l_info_slave_ops->io_slave_clone(dst, src);
 		if (err < 0)
 			return err;
 	}
@@ -379,6 +402,8 @@ static struct nla_policy link_info_policy[IFLA_INFO_MAX+1] = {
 	[IFLA_INFO_KIND]	= { .type = NLA_STRING },
 	[IFLA_INFO_DATA]	= { .type = NLA_NESTED },
 	[IFLA_INFO_XSTATS]	= { .type = NLA_NESTED },
+	[IFLA_INFO_SLAVE_KIND]	= { .type = NLA_STRING },
+	[IFLA_INFO_SLAVE_DATA]	= { .type = NLA_NESTED },
 };
 
 int rtnl_link_info_parse(struct rtnl_link *link, struct nlattr **tb)
@@ -688,11 +713,26 @@ static int link_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 		}
 
 		if (li[IFLA_INFO_SLAVE_KIND]) {
+			struct rtnl_link_info_ops *ops;
 			const char *kind = nla_get_string(li[IFLA_INFO_SLAVE_KIND]);
 
 			err = rtnl_link_set_slave_type(link, kind);
 			if (err < 0)
 				goto errout;
+
+			ops = link->l_info_slave_ops;
+
+			if (ops) {
+				if (ops->io_slave_parse &&
+				    (li[IFLA_INFO_SLAVE_DATA] || li[IFLA_INFO_XSTATS])) {
+					err = ops->io_slave_parse(link, li[IFLA_INFO_SLAVE_DATA],
+								  li[IFLA_INFO_XSTATS]);
+					if (err < 0)
+						goto errout;
+				} else {
+					/* XXX: Warn about unparsed info? */
+				}
+			}
 
 			link->ce_mask |= LINK_ATTR_LINKINFO_SLAVE_KIND;
 		}
@@ -1616,6 +1656,12 @@ static int build_link_msg(int cmd, struct ifinfomsg *hdr,
 
 		if (link->ce_mask & LINK_ATTR_LINKINFO_SLAVE_KIND) {
 			NLA_PUT_STRING(msg, IFLA_INFO_SLAVE_KIND, link->l_info_slave_kind);
+
+			if (link->l_info_slave_ops) {
+				if (link->l_info_slave_ops->io_put_attrs &&
+				    link->l_info_slave_ops->io_put_attrs(msg, link) < 0)
+					goto nla_put_failure;
+			}
 		}
 
 		nla_nest_end(msg, info);
@@ -2625,6 +2671,8 @@ char *rtnl_link_get_type(struct rtnl_link *link)
 int rtnl_link_set_slave_type(struct rtnl_link *link, const char *type)
 {
 	char *kind = NULL;
+	struct rtnl_link_info_ops *io;
+	int err;
 
 	if (type) {
 		kind = strdup(type);
@@ -2634,12 +2682,26 @@ int rtnl_link_set_slave_type(struct rtnl_link *link, const char *type)
 
 	free(link->l_info_slave_kind);
 	link->l_info_slave_kind = kind;
+	release_link_info_slave(link);
 
 	if (kind)
 		link->ce_mask |= LINK_ATTR_LINKINFO_SLAVE_KIND;
 	else
 		link->ce_mask &= ~LINK_ATTR_LINKINFO_SLAVE_KIND;
+
+	io = rtnl_link_info_ops_lookup(type);
+	if (io) {
+		if (   io->io_slave_alloc
+		    && (err = io->io_slave_alloc(link)) < 0)
+			goto errout;
+
+		link->l_info_slave_ops = io;
+ 	}
+ 
 	return 0;
+errout:
+	free(kind);
+	return err;
 }
 
 /**

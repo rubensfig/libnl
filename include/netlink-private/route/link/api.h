@@ -64,6 +64,39 @@ struct rtnl_link_info_ops
 	int	      (*io_compare)(struct rtnl_link *, struct rtnl_link *,
 				    int flags);
 
+	/** Called to assign an info type to a link.
+	 * Has to allocate enough resources to hold attributes. Can
+	 * use link->l_info to store a pointer. */
+	int	      (*io_slave_alloc)(struct rtnl_link *);
+
+	/** Called to parse the link info attribute.
+	 * Must parse the attribute and assign all values to the link.
+	 */
+	int	      (*io_slave_parse)(struct rtnl_link *,
+				  struct nlattr *,
+				  struct nlattr *);
+
+	/** Called when the link object is dumped.
+	 * Must dump the info type specific attributes. */
+	void	      (*io_slave_dump[NL_DUMP_MAX+1])(struct rtnl_link *,
+						      struct nl_dump_params *);
+
+	/** Called when a link object is cloned.
+	 * Must clone all info type specific attributes. */
+	int	      (*io_slave_clone)(struct rtnl_link *, struct rtnl_link *);
+
+	/** Called when construction a slave link netlink message.
+	 * Must append all info type specific attributes to the message. */
+	int	      (*io_slave_put_attrs)(struct nl_msg *, struct rtnl_link *);
+
+	/** Called to release all resources previously allocated
+	 * in either io_slave_alloc() or io_slave_parse(). */
+	void	      (*io_slave_free)(struct rtnl_link *);
+
+	/** Called to compare slave link info parameters between two links. */
+	int	      (*io_slave_compare)(struct rtnl_link *, struct rtnl_link *,
+					  int flags);
+
 	struct nl_list_head		io_list;
 };
 
