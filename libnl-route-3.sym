@@ -233,8 +233,16 @@ global:
 	rtnl_link_bond_alloc;
 	rtnl_link_bond_enslave;
 	rtnl_link_bond_enslave_ifindex;
+	rtnl_link_bond_get_active_slave;
+	rtnl_link_bond_get_mode;
+	rtnl_link_bond_get_primary;
+	rtnl_link_bond_get_xmit_hash_policy;
 	rtnl_link_bond_release;
 	rtnl_link_bond_release_ifindex;
+	rtnl_link_bond_set_active_slave;
+	rtnl_link_bond_set_mode;
+	rtnl_link_bond_set_primary;
+	rtnl_link_bond_set_xmit_hash_policy;
 	rtnl_link_bridge_add;
 	rtnl_link_bridge_alloc;
 	rtnl_link_bridge_flags2str;

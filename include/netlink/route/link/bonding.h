@@ -31,6 +31,18 @@ extern int	rtnl_link_bond_enslave(struct nl_sock *, struct rtnl_link *,
 extern int	rtnl_link_bond_release_ifindex(struct nl_sock *, int);
 extern int	rtnl_link_bond_release(struct nl_sock *, struct rtnl_link *);
 
+extern int	rtnl_link_bond_set_mode(struct rtnl_link *, uint8_t);
+extern int	rtnl_link_bond_get_mode(struct rtnl_link *, uint8_t *);
+
+extern int	rtnl_link_bond_set_active_slave(struct rtnl_link *, uint32_t);
+extern int	rtnl_link_bond_get_active_slave(struct rtnl_link *, uint32_t *);
+
+extern int	rtnl_link_bond_set_primary(struct rtnl_link *, uint32_t);
+extern int	rtnl_link_bond_get_primary(struct rtnl_link *, uint32_t *);
+
+extern int	rtnl_link_bond_set_xmit_hash_policy(struct rtnl_link *, uint8_t);
+extern int	rtnl_link_bond_get_xmit_hash_policy(struct rtnl_link *, uint8_t *);
+
 #ifdef __cplusplus
 }
 #endif
