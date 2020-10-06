@@ -43,6 +43,9 @@ extern int	rtnl_link_bond_get_primary(struct rtnl_link *, uint32_t *);
 extern int	rtnl_link_bond_set_xmit_hash_policy(struct rtnl_link *, uint8_t);
 extern int	rtnl_link_bond_get_xmit_hash_policy(struct rtnl_link *, uint8_t *);
 
+extern int	rtnl_link_bond_slave_set_state(struct rtnl_link *, uint8_t);
+extern int	rtnl_link_bond_slave_get_state(struct rtnl_link *, uint8_t *);
+
 #ifdef __cplusplus
 }
 #endif

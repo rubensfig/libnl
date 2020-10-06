@@ -153,6 +153,104 @@ nla_put_failure:
 	return 0;
 }
 
+/** @cond SKIP */
+#define BOND_SLAVE_ATTR_STATE		(1 << 0)
+
+struct bond_slave_info
+{
+	uint8_t  bsi_state;
+	uint32_t bsi_mask;
+};
+
+/** @endcond */
+
+static struct nla_policy bond_slave_nl_policy[IFLA_BOND_SLAVE_MAX+1] = {
+	[IFLA_BOND_SLAVE_STATE] = { .type = NLA_U8 },
+};
+
+static int bond_slave_alloc(struct rtnl_link *link)
+{
+	struct bond_slave_info *info;
+
+	if (link->l_info_slave)
+		memset(link->l_info_slave, 0, sizeof(*info));
+	else {
+		if ((info = calloc(1, sizeof(*info))) == NULL)
+			return -NLE_NOMEM;
+
+		link->l_info_slave = info;
+	}
+	return 0;
+}
+
+static int bond_slave_parse(struct rtnl_link *link, struct nlattr *data,
+			    struct nlattr *xstats)
+{
+	struct nlattr *tb[IFLA_BOND_SLAVE_MAX+1];
+	struct bond_slave_info *info;
+	int err;
+
+	NL_DBG(3, "Parsing bonding info\n");
+
+	if ((err = nla_parse_nested(tb, IFLA_BOND_SLAVE_MAX, data, bond_slave_nl_policy)) < 0)
+		goto errout;
+
+	if ((err = bond_slave_alloc(link)) < 0)
+		goto errout;
+
+	info = link->l_info_slave;
+
+	if (tb[IFLA_BOND_SLAVE_STATE]) {
+		info->bsi_state = nla_get_u8(tb[IFLA_BOND_SLAVE_STATE]);
+		info->bsi_mask |= BOND_SLAVE_ATTR_STATE;
+	}
+
+	err = 0;
+errout:
+	return err;
+}
+
+static void bond_slave_free(struct rtnl_link *link)
+{
+	free(link->l_info_slave);
+	link->l_info_slave = NULL;
+}
+
+static int bond_slave_clone(struct rtnl_link *dst, struct rtnl_link *src)
+{
+	struct bod_slave_info *vdst, *vsrc = src->l_info_slave;
+	int err;
+
+	dst->l_info_slave = NULL;
+	if ((err = bond_slave_alloc(dst)) < 0)
+		return err;
+	vdst = dst->l_info_slave;
+
+	if (!vdst || !vsrc)
+		return -NLE_NOMEM;
+
+	memcpy(vdst, vsrc, sizeof(struct bond_slave_info));
+
+	return 0;
+}
+
+static int bond_slave_put_attrs(struct nl_msg *msg, struct rtnl_link *link)
+{
+	struct bond_slave_info *info = link->l_info_slave;
+	struct nlattr *data;
+
+	if (!(data = nla_nest_start(msg, IFLA_INFO_SLAVE_DATA)))
+		return -NLE_MSGSIZE;
+
+	if (info->bsi_mask & BOND_SLAVE_ATTR_STATE)
+		NLA_PUT_U8(msg, IFLA_BOND_SLAVE_STATE, info->bsi_state);
+
+	nla_nest_end(msg, data);
+
+nla_put_failure:
+	return 0;
+}
+
 /**
  * Allocate link object of type bond
  *
@@ -346,6 +444,11 @@ static struct rtnl_link_info_ops bonding_info_ops = {
 	.io_clone		= bonding_clone,
 	.io_put_attrs		= bonding_put_attrs,
 	.io_free		= bonding_free,
+	.io_slave_alloc		= bond_slave_alloc,
+	.io_slave_parse		= bond_slave_parse,
+	.io_slave_clone		= bond_slave_clone,
+	.io_slave_put_attrs	= bond_slave_put_attrs,
+	.io_slave_free		= bond_slave_free,
 };
 
 /** @cond SKIP */
@@ -514,6 +617,55 @@ int rtnl_link_bond_get_xmit_hash_policy(struct rtnl_link *link, uint8_t *policy)
 
 	if (policy)
 		*policy = info->bi_xmit_hash_policy;
+
+	return 0;
+}
+
+/** @cond SKIP */
+#define IS_BOND_SLAVE_LINK_ASSERT(link) \
+	if ((link)->l_info_slave_ops != &bonding_info_ops) { \
+		APPBUG("Link is not a bonding slave. set slave type \"bond\" first."); \
+		return -NLE_OPNOTSUPP; \
+	}
+/** @endcond */
+
+/**
+ * Set bond slave state
+ * @arg link		Link object
+ * @arg state		slave state
+ *
+ * @return 0 on success or a negative error code.
+ */
+int rtnl_link_bond_slave_set_state(struct rtnl_link *link, uint8_t state)
+{
+	struct bond_slave_info *info = link->l_info_slave;
+
+	IS_BOND_SLAVE_LINK_ASSERT(link);
+
+	info->bsi_state = state;
+	info->bsi_mask |= BOND_SLAVE_ATTR_STATE;
+
+	return 0;
+}
+
+/**
+ * Get bonding mode
+ * @arg link		Link object
+ * @arg mode		bond mode
+ *
+ * @return bond mode, 0 if not set or a negative error code.
+ */
+int rtnl_link_bond_slave_get_state(struct rtnl_link *link, uint8_t *state)
+{
+	struct bond_slave_info *info = link->l_info_slave;
+
+	IS_BOND_SLAVE_LINK_ASSERT(link);
+
+	if (!(info->bsi_mask & BOND_SLAVE_ATTR_STATE))
+		return -NLE_NOATTR;
+
+	if (state)
+		*state = info->bsi_state;
 
 	return 0;
 }

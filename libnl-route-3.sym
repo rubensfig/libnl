@@ -243,6 +243,8 @@ global:
 	rtnl_link_bond_set_mode;
 	rtnl_link_bond_set_primary;
 	rtnl_link_bond_set_xmit_hash_policy;
+	rtnl_link_bond_slave_get_state;
+	rtnl_link_bond_slave_set_state;
 	rtnl_link_bridge_add;
 	rtnl_link_bridge_alloc;
 	rtnl_link_bridge_flags2str;
