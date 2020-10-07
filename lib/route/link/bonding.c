@@ -437,6 +437,14 @@ int rtnl_link_bond_release(struct nl_sock *sock, struct rtnl_link *slave)
 				rtnl_link_get_ifindex(slave));
 }
 
+static void bond_slave_dump_line(struct rtnl_link *link, struct nl_dump_params *p)
+{
+	struct bond_slave_info *info = link->l_info_slave;
+
+	if (info->bsi_mask & BOND_SLAVE_ATTR_STATE)
+		nl_dump(p, "bond-slave-state %d", info->bsi_state);
+}
+
 static struct rtnl_link_info_ops bonding_info_ops = {
 	.io_name		= "bond",
 	.io_alloc		= bonding_alloc,
@@ -449,6 +457,9 @@ static struct rtnl_link_info_ops bonding_info_ops = {
 	.io_slave_clone		= bond_slave_clone,
 	.io_slave_put_attrs	= bond_slave_put_attrs,
 	.io_slave_free		= bond_slave_free,
+	.io_slave_dump = {
+	    [NL_DUMP_LINE]	= bond_slave_dump_line,
+	},
 };
 
 /** @cond SKIP */
