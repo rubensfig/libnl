@@ -931,6 +931,9 @@ static void link_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 	if (link->l_info_ops && link->l_info_ops->io_dump[NL_DUMP_LINE])
 		link->l_info_ops->io_dump[NL_DUMP_LINE](link, p);
 
+	if (link->l_info_slave_ops && link->l_info_slave_ops->io_slave_dump[NL_DUMP_LINE])
+		link->l_info_slave_ops->io_slave_dump[NL_DUMP_LINE](link, p);
+
 	do_foreach_af(link, af_dump_line, p);
 
 	nl_dump(p, "\n");
