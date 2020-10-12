@@ -251,6 +251,25 @@ nla_put_failure:
 	return 0;
 }
 
+static int bond_compare(struct rtnl_link *link_a, struct rtnl_link *link_b,
+			 int flags)
+{
+	struct bonding_info *a = link_a->l_info;
+	struct bonding_info *b = link_b->l_info;
+	int diff = 0;
+	uint32_t attrs = flags & LOOSE_COMPARISON ? b->ce_mask : ~0;
+
+#define BOND_DIFF(ATTR, EXPR) ATTR_DIFF(attrs, BONDING_ATTR_##ATTR, a, b, EXPR)
+
+	diff |= BOND_DIFF(MODE, a->bi_mode != b->bi_mode);
+	diff |= BOND_DIFF(ACTIVE_SLAVE, a->bi_active_slave != b->bi_active_slave);
+	diff |= BOND_DIFF(PRIMARY, a->bi_primary != b->bi_primary);
+	diff |= BOND_DIFF(XMIT_HASH_POLICY, a->bi_xmit_hash_policy != b->bi_xmit_hash_policy);
+#undef BOND_DIFF
+
+	return diff;
+}
+
 /**
  * Allocate link object of type bond
  *
@@ -452,6 +471,7 @@ static struct rtnl_link_info_ops bonding_info_ops = {
 	.io_clone		= bonding_clone,
 	.io_put_attrs		= bonding_put_attrs,
 	.io_free		= bonding_free,
+	.io_compare		= bond_compare,
 	.io_slave_alloc		= bond_slave_alloc,
 	.io_slave_parse		= bond_slave_parse,
 	.io_slave_clone		= bond_slave_clone,
