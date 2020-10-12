@@ -270,6 +270,22 @@ static int bond_compare(struct rtnl_link *link_a, struct rtnl_link *link_b,
 	return diff;
 }
 
+static int bond_slave_compare(struct rtnl_link *link_a, struct rtnl_link *link_b,
+			 int flags)
+{
+	struct bond_slave_info *a = link_a->l_info_slave;
+	struct bond_slave_info *b = link_b->l_info_slave;
+	int diff = 0;
+	uint32_t attrs = flags & LOOSE_COMPARISON ? b->ce_mask : ~0;
+
+#define BOND_SLAVE_DIFF(ATTR, EXPR) ATTR_DIFF(attrs, BOND_SLAVE_ATTR_##ATTR, a, b, EXPR)
+
+	diff |= BOND_SLAVE_DIFF(STATE, a->bsi_state != b->bsi_state);
+#undef BONDSLAVE__DIFF
+
+	return diff;
+}
+
 /**
  * Allocate link object of type bond
  *
@@ -480,6 +496,7 @@ static struct rtnl_link_info_ops bonding_info_ops = {
 	.io_slave_dump = {
 	    [NL_DUMP_LINE]	= bond_slave_dump_line,
 	},
+	.io_slave_compare	= bond_slave_compare,
 };
 
 /** @cond SKIP */
