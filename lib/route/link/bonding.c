@@ -159,7 +159,7 @@ nla_put_failure:
 struct bond_slave_info
 {
 	uint8_t  bsi_state;
-	uint32_t bsi_mask;
+	uint32_t ce_mask;
 };
 
 /** @endcond */
@@ -202,7 +202,7 @@ static int bond_slave_parse(struct rtnl_link *link, struct nlattr *data,
 
 	if (tb[IFLA_BOND_SLAVE_STATE]) {
 		info->bsi_state = nla_get_u8(tb[IFLA_BOND_SLAVE_STATE]);
-		info->bsi_mask |= BOND_SLAVE_ATTR_STATE;
+		info->ce_mask |= BOND_SLAVE_ATTR_STATE;
 	}
 
 	err = 0;
@@ -242,7 +242,7 @@ static int bond_slave_put_attrs(struct nl_msg *msg, struct rtnl_link *link)
 	if (!(data = nla_nest_start(msg, IFLA_INFO_SLAVE_DATA)))
 		return -NLE_MSGSIZE;
 
-	if (info->bsi_mask & BOND_SLAVE_ATTR_STATE)
+	if (info->ce_mask & BOND_SLAVE_ATTR_STATE)
 		NLA_PUT_U8(msg, IFLA_BOND_SLAVE_STATE, info->bsi_state);
 
 	nla_nest_end(msg, data);
@@ -460,7 +460,7 @@ static void bond_slave_dump_line(struct rtnl_link *link, struct nl_dump_params *
 {
 	struct bond_slave_info *info = link->l_info_slave;
 
-	if (info->bsi_mask & BOND_SLAVE_ATTR_STATE)
+	if (info->ce_mask & BOND_SLAVE_ATTR_STATE)
 		nl_dump(p, "bond-slave-state %d", info->bsi_state);
 }
 
@@ -674,7 +674,7 @@ int rtnl_link_bond_slave_set_state(struct rtnl_link *link, uint8_t state)
 	IS_BOND_SLAVE_LINK_ASSERT(link);
 
 	info->bsi_state = state;
-	info->bsi_mask |= BOND_SLAVE_ATTR_STATE;
+	info->ce_mask |= BOND_SLAVE_ATTR_STATE;
 
 	return 0;
 }
@@ -692,7 +692,7 @@ int rtnl_link_bond_slave_get_state(struct rtnl_link *link, uint8_t *state)
 
 	IS_BOND_SLAVE_LINK_ASSERT(link);
 
-	if (!(info->bsi_mask & BOND_SLAVE_ATTR_STATE))
+	if (!(info->ce_mask & BOND_SLAVE_ATTR_STATE))
 		return -NLE_NOATTR;
 
 	if (state)
