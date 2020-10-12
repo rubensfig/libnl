@@ -407,10 +407,17 @@ int rtnl_link_info_data_compare(struct rtnl_link *a, struct rtnl_link *b, int fl
 	if (a->l_info_ops != b->l_info_ops)
 		return ~0;
 
-	if (!a->l_info_ops || !a->l_info_ops->io_compare)
-		return 0;
+	if (a->l_info_slave_ops != b->l_info_slave_ops)
+		return ~0;
 
-	return a->l_info_ops->io_compare(a, b, flags);
+	if (a->l_info_ops && a->l_info_ops->io_compare && a->l_info_ops->io_compare(a, b, flags))
+		return ~0;
+
+	if (a->l_info_slave_ops && a->l_info_slave_ops->io_compare &&
+	    a->l_info_slave_ops->io_slave_compare(a, b, flags))
+		return ~0;
+
+	return 0;
 }
 
 /** @} */
