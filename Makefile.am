@@ -376,6 +376,7 @@ lib_libnl_route_3_la_SOURCES = \
 	lib/route/act/skbedit.c \
 	lib/route/act/vlan.c \
 	lib/route/addr.c \
+	lib/route/bridge_vlan.c \
 	lib/route/class.c \
 	lib/route/classid.c \
 	lib/route/cls.c \
