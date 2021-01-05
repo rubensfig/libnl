@@ -1172,4 +1172,14 @@ libnl_3_6 {
 	rtnl_mdb_entry_get_proto;
 	rtnl_mdb_entry_get_state;
 	rtnl_mdb_entry_get_vid;
+	rtnl_bridge_vlan_alloc;
+	rtnl_bridge_vlan_alloc_cache;
+	rtnl_bridge_vlan_alloc_cache_flags;
+	rtnl_bridge_vlan_get_ifindex;
+	rtnl_bridge_vlan_set_ifindex;
+	rtnl_bridge_vlan_get_state;
+	rtnl_bridge_vlan_set_state;
+	rtnl_bridge_vlan_get_vlan_id;
+	rtnl_bridge_vlan_set_vlan_id;
 } libnl_3_5;
+

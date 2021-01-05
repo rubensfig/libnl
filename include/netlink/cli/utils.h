@@ -81,6 +81,9 @@ extern struct nl_cache *nl_cli_alloc_cache_flags(struct nl_sock *, const char *,
 
 extern void		nl_cli_load_module(const char *, const char *);
 
+void nl_cli_socket_enable_auto_ack(struct nl_sock *sk);
+void nl_cli_socket_disable_auto_ack(struct nl_sock *sk);
+
 #ifdef __cplusplus
 }
 #endif
