@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 	struct rtnl_bridge_vlan *rtnl_bridge_vlan_alloc(void);
+	void rtnl_bridge_vlan_put(struct rtnl_bridge_vlan *bvlan);
 	int rtnl_bridge_vlan_alloc_cache(struct nl_sock *sk,
 					 struct nl_cache **result);
 	int rtnl_bridge_vlan_alloc_cache_flags(struct nl_sock *sock,

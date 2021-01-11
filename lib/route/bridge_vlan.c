@@ -80,6 +80,7 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 
 	return err;
 errout:
+	rtnl_bridge_vlan_put(bvlan);
 	return err;
 }
 
@@ -150,6 +151,12 @@ int rtnl_bridge_vlan_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **r
 	return 0;
 }
 /** @} */
+
+void rtnl_bridge_vlan_put(struct rtnl_bridge_vlan *bvlan)
+{
+	nl_object_put((struct nl_object *) bvlan);
+
+}
 
 static void __init bridge_vlan_init(void)
 {
