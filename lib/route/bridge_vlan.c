@@ -6,6 +6,7 @@
 #include <netlink-private/netlink.h>
 #include <netlink/netlink.h>
 #include <linux/if_bridge.h>
+#include <netlink/route/bridge_vlan.h>
 
 /** @cond SKIP */
 static struct nl_cache_ops rtnl_bridge_vlan_ops;
@@ -22,11 +23,11 @@ static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk
 	return nl_rtgen_request(sk, RTM_GETVLAN, AF_BRIDGE, NLM_F_DUMP);
 }
 
-static struct nla_policy br_vlandb_policy[BRIDGE_VLANDB_MAX 1] = {
+static struct nla_policy br_vlandb_policy[BRIDGE_VLANDB_MAX + 1] = {
 	[BRIDGE_VLANDB_ENTRY] = {.type = NLA_NESTED},
 };
 
-static struct nla_policy br_vlandb_entry_policy[BRIDGE_VLANDB_ENTRY_MAX 1] = {
+static struct nla_policy br_vlandb_entry_policy[BRIDGE_VLANDB_ENTRY_MAX + 1] = {
 	[BRIDGE_VLANDB_ENTRY_INFO]	= { .type = NLA_BINARY, 
 					    .minlen = sizeof(struct bridge_vlan_info),
 					    .maxlen = sizeof(struct bridge_vlan_info) },
@@ -44,7 +45,7 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 			  struct nlmsghdr *nlh, struct nl_parser_param *pp)
 {
 	int err = 0;
-	struct nlattr *tb[BRIDGE_VLANDB_MAX 1], *ttb[BRIDGE_VLANDB_ENTRY_MAX 1];
+	struct nlattr *tb[BRIDGE_VLANDB_MAX + 1], *ttb[BRIDGE_VLANDB_ENTRY_MAX + 1];
 	uint8_t state = 0;
 	uint16_t range = 0;
 	struct bridge_vlan_info *bvlan_info;
