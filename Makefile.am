@@ -102,6 +102,7 @@ libnlinclude_netlink_routedir = $(libnlincludedir)/netlink/route
 libnlinclude_netlink_route_HEADERS = \
 	include/netlink/route/action.h \
 	include/netlink/route/addr.h \
+	include/netlink/route/bridge_vlan.h \
 	include/netlink/route/class.h \
 	include/netlink/route/classifier.h \
 	include/netlink/route/link.h \

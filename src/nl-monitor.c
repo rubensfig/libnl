@@ -38,6 +38,7 @@ static const struct {
 	{ RTNLGRP_IPV6_NETCONF, "ipv6-netconf" },
 	{ RTNLGRP_MPLS_NETCONF, "mpls-netconf" },
 	{ RTNLGRP_MDB, "mdb" },
+	{ RTNLGRP_BRVLAN, "bridge-vlan" },
 	{ RTNLGRP_NONE, NULL }
 };
 
@@ -48,6 +49,7 @@ static void obj_input(struct nl_object *obj, void *arg)
 
 static int event_input(struct nl_msg *msg, void *arg)
 {
+	nl_msg_dump(msg, stdout);
 	if (nl_msg_parse(msg, &obj_input, arg) < 0)
 		fprintf(stderr, "<<EVENT>> Unknown message type\n");
 
