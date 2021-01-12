@@ -4,9 +4,10 @@
  */
 
 #include <netlink-private/netlink.h>
+#include <netlink/route/bridge_vlan.h>
 #include <netlink/netlink.h>
 #include <linux/if_bridge.h>
-#include <netlink/route/bridge_vlan.h>
+#include <netlink/utils.h>
 
 /** @cond SKIP */
 static struct nl_cache_ops rtnl_bridge_vlan_ops;
@@ -252,6 +253,27 @@ int rtnl_bridge_vlan_set_ifindex(struct rtnl_bridge_vlan *bvlan, int ifindex)
 	return 0;
 }
 
+int rtnl_bridge_vlan_get_vlan_id(struct rtnl_bridge_vlan *bvlan)
+{
+	return bvlan->vlan_id;
+}
+
+int rtnl_bridge_vlan_set_vlan_id(struct rtnl_bridge_vlan *bvlan, uint16_t vid)
+{
+	bvlan->vlan_id = vid;
+	return 0;
+}
+
+uint8_t rtnl_bridge_vlan_get_state(struct rtnl_bridge_vlan *bvlan)
+{
+	return bvlan->state;
+}
+
+int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state)
+{
+	bvlan->state = state;
+	return 0;
+}
 /** @} */
 
 struct rtnl_bridge_vlan *rtnl_bridge_vlan_alloc(void)

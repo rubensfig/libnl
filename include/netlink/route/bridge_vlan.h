@@ -25,6 +25,11 @@ extern "C" {
 	int rtnl_bridge_vlan_get_ifindex(struct rtnl_bridge_vlan *bvlan);
 	int rtnl_bridge_vlan_set_ifindex(struct rtnl_bridge_vlan *bvlan, int ifindex);
 
+	int rtnl_bridge_vlan_get_vlan_id(struct rtnl_bridge_vlan *bvlan);
+	int rtnl_bridge_vlan_set_vlan_id(struct rtnl_bridge_vlan *bvlan, uint16_t vid);
+
+	uint8_t rtnl_bridge_vlan_get_state(struct rtnl_bridge_vlan *bvlan);
+	int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state);
 #ifdef __cplusplus
 }
 #endif
