@@ -1175,4 +1175,6 @@ libnl_3_6 {
 	rtnl_bridge_vlan_alloc;
 	rtnl_bridge_vlan_alloc_cache;
 	rtnl_bridge_vlan_alloc_cache_flags;
+	rtnl_bridge_vlan_set_ifindex;
+	rtnl_bridge_vlan_get_ifindex;
 } libnl_3_5;

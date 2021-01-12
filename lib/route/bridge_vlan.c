@@ -13,9 +13,18 @@ static struct nl_cache_ops rtnl_bridge_vlan_ops;
 static struct nl_object_ops bridge_vlan_obj_ops;
 /** @endcond */
 
+static uint64_t bridge_vlan_compare(struct nl_object *_a, struct nl_object *_b,
+				  uint64_t attrs, int flags)
+{
+	struct rtnl_bridge_vlan *a = (struct rtnl_bridge_vlan *) _a;
+	struct rtnl_bridge_vlan *b = (struct rtnl_bridge_vlan *) _b;
+
+	return 0;
+}
+
 static void br_vlan_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 {
-	nl_dump(p, "hello\n", 1);
+	nl_dump(p, "bridge parameters\n", 1);
 }
 
 static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk)
@@ -35,11 +44,6 @@ static struct nla_policy br_vlandb_entry_policy[BRIDGE_VLANDB_ENTRY_MAX + 1] = {
 	[BRIDGE_VLANDB_ENTRY_STATE]	= { .type = NLA_U8 },
 	[BRIDGE_VLANDB_ENTRY_TUNNEL_INFO] = { .type = NLA_NESTED },
 };
-
-struct rtnl_bridge_vlan *rtnl_bridge_vlan_alloc(void)
-{
-	return (struct rtnl_bridge_vlan *) nl_object_alloc(&bridge_vlan_obj_ops);
-}
 
 static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *who,
 			  struct nlmsghdr *nlh, struct nl_parser_param *pp)
@@ -79,6 +83,7 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 	bvlan->vlan_id = bvlan_info->vid;
 	bvlan->range = range;
 
+	err = pp->pp_cb((struct nl_object *) bvlan, pp);
 	return err;
 errout:
 	rtnl_bridge_vlan_put(bvlan);
@@ -95,7 +100,10 @@ static struct nl_object_ops bridge_vlan_obj_ops = {
 	.oo_size = sizeof(struct rtnl_bridge_vlan),
 	.oo_dump = {
 		    [NL_DUMP_LINE] = br_vlan_dump_line,
+		    [NL_DUMP_DETAILS] = br_vlan_dump_line,
+		    [NL_DUMP_STATS] = br_vlan_dump_line,
 		    },
+	.oo_compare = bridge_vlan_compare,
 };
 
 static struct nl_cache_ops bridge_vlan_ops = {
@@ -124,7 +132,7 @@ int rtnl_bridge_vlan_alloc_cache(struct nl_sock *sk, struct nl_cache **result)
 }
 
 /**
- * Build a neighbour cache including all Bridge VLAN entries currently configured in the kernel.
+ * Build a bridge vlan cache including all Bridge VLAN entries currently configured in the kernel.
  * @arg sock		Netlink socket.
  * @arg result		Pointer to store resulting cache.
  * @arg flags		Flags to apply to cache before filling
@@ -152,6 +160,105 @@ int rtnl_bridge_vlan_alloc_cache_flags(struct nl_sock *sock, struct nl_cache **r
 	return 0;
 }
 /** @} */
+
+/**
+ * @name Add / Modify
+ * @{
+ */
+
+static int build_bridge_vlan_msg(int cmd, struct br_vlan_msg *hdr,
+			  	 struct rtnl_bridge_vlan *link, int flags, struct nl_msg **result)
+{
+	struct nl_msg *msg;
+	msg = nlmsg_alloc_simple(cmd, flags);
+	if (!msg)
+		return -NLE_NOMEM;
+
+	return 0;
+}
+
+int rtnl_bridge_vlan_build_change_request(struct rtnl_bridge_vlan *orig,
+				   	  struct rtnl_bridge_vlan *changes, int flags,
+				   	  struct nl_msg **result)
+{
+	struct br_vlan_msg bvlan = {
+		.family = orig->family,
+		.ifindex = orig->ifindex,
+	};
+	int err, rt;
+
+	build_bridge_vlan_msg(RTM_SETLINK, &bvlan, changes, flags, result);
+
+	return 0;
+}
+
+int rtnl_bridge_vlan_change(struct nl_sock *sk, struct rtnl_bridge_vlan *orig,
+		     struct rtnl_bridge_vlan *changes, int flags)
+{
+	struct nl_msg *msg;
+	int err;
+
+	err = rtnl_bridge_vlan_build_change_request(orig, changes, flags, &msg);
+
+	BUG_ON(msg->nm_nlh->nlmsg_seq != NL_AUTO_SEQ);
+retry:
+	err = nl_send_auto_complete(sk, msg);
+	if (err < 0)
+		goto errout;
+
+	err = wait_for_ack(sk);
+	if (err == -NLE_OPNOTSUPP && msg->nm_nlh->nlmsg_type == RTM_NEWLINK) {
+		msg->nm_nlh->nlmsg_type = RTM_SETLINK;
+		msg->nm_nlh->nlmsg_seq = NL_AUTO_SEQ;
+		goto retry;
+	}
+
+errout:
+	nlmsg_free(msg);
+	return err;
+}
+/** @} */
+
+/**
+ * @name Get/ Set
+ * @{
+ */
+struct rtnl_bridge_vlan *rtnl_bridge_vlan_get(struct nl_cache *cache, int ifindex)
+{
+	struct rtnl_bridge_vlan *bvlan_entry;
+
+	if (cache->c_ops != &rtnl_bridge_vlan_ops)
+		return NULL;
+
+	nl_list_for_each_entry(bvlan_entry, &cache->c_items, ce_list) {
+		if (bvlan_entry->ifindex == ifindex) {
+			nl_object_get((struct nl_object *) bvlan_entry);
+			return bvlan_entry;
+		}
+	}
+
+	return NULL;
+
+}
+
+int rtnl_bridge_vlan_get_ifindex(struct rtnl_bridge_vlan *bvlan)
+{
+	return bvlan->ifindex;
+}
+
+int rtnl_bridge_vlan_set_ifindex(struct rtnl_bridge_vlan *bvlan, int ifindex)
+{
+	bvlan->ifindex = ifindex;
+	return 0;
+}
+
+/** @} */
+
+struct rtnl_bridge_vlan *rtnl_bridge_vlan_alloc(void)
+{
+	return (struct rtnl_bridge_vlan *) nl_object_alloc(&bridge_vlan_obj_ops);
+}
+
 
 void rtnl_bridge_vlan_put(struct rtnl_bridge_vlan *bvlan)
 {

@@ -200,6 +200,7 @@ if ENABLE_CLI
 libnlinclude_netlink_clidir = $(libnlincludedir)/netlink/cli
 libnlinclude_netlink_cli_HEADERS = \
 	include/netlink/cli/addr.h \
+	include/netlink/cli/bridge_vlan.h \
 	include/netlink/cli/class.h \
 	include/netlink/cli/cls.h \
 	include/netlink/cli/ct.h \
@@ -612,6 +613,7 @@ endif
 
 src_lib_libnl_cli_3_la_SOURCES = \
 	src/lib/addr.c \
+	src/lib/bridge_vlan.c \
 	src/lib/class.c \
 	src/lib/cls.c \
 	src/lib/ct.c \
@@ -679,6 +681,7 @@ cli_programs = \
 	src/nl-addr-add \
 	src/nl-addr-delete \
 	src/nl-addr-list \
+	src/nl-bridge \
 	src/nl-class-add \
 	src/nl-class-delete \
 	src/nl-class-list \
@@ -756,6 +759,8 @@ src_nl_addr_delete_CPPFLAGS =       $(src_cppflags)
 src_nl_addr_delete_LDADD =          $(src_ldadd)
 src_nl_addr_list_CPPFLAGS =         $(src_cppflags)
 src_nl_addr_list_LDADD =            $(src_ldadd)
+src_nl_bridge_CPPFLAGS =       	    $(src_cppflags)
+src_nl_bridge_LDADD =          	    $(src_ldadd)
 src_nl_class_add_CPPFLAGS =         $(src_cppflags)
 src_nl_class_add_LDADD =            $(src_ldadd)
 src_nl_class_delete_CPPFLAGS =      $(src_cppflags)

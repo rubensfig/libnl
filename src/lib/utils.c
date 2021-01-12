@@ -133,6 +133,16 @@ struct nl_sock *nl_cli_alloc_socket(void)
 	return sock;
 }
 
+
+void nl_cli_socket_enable_auto_ack(struct nl_sock *sk)
+{
+	nl_socket_enable_auto_ack(sk);
+}
+void nl_cli_socket_disable_auto_ack(struct nl_sock *sk)
+{
+	nl_socket_disable_auto_ack(sk);
+}
+
 struct nl_addr *nl_cli_addr_parse(const char *str, int family)
 {
 	struct nl_addr *addr;
