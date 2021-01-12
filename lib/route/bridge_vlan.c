@@ -175,6 +175,7 @@ static int build_bridge_vlan_msg(int cmd, struct br_vlan_msg *hdr,
 	if (!msg)
 		return -NLE_NOMEM;
 
+	*result = msg;
 	return 0;
 }
 
