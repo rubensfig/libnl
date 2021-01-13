@@ -10,6 +10,11 @@
 #include <netlink/utils.h>
 
 /** @cond SKIP */
+#define BRIDGE_VLAN_ATTR_IFINDEX         0x000001
+#define BRIDGE_VLAN_ATTR_RANGE           0x000002
+#define BRIDGE_VLAN_ATTR_FAMILY          0x000004
+#define BRIDGE_VLAN_ATTR_VID             0x000008
+
 static struct nl_cache_ops rtnl_bridge_vlan_ops;
 static struct nl_object_ops bridge_vlan_obj_ops;
 /** @endcond */
@@ -19,8 +24,35 @@ static uint64_t bridge_vlan_compare(struct nl_object *_a, struct nl_object *_b,
 {
 	struct rtnl_bridge_vlan *a = (struct rtnl_bridge_vlan *) _a;
 	struct rtnl_bridge_vlan *b = (struct rtnl_bridge_vlan *) _b;
+	uint64_t diff = 0;
+
+#define BRIDGE_VLAN_DIFF(ATTR, EXPR) ATTR_DIFF(attrs, BRIDGE_VLAN_ATTR_##ATTR, a, b, EXPR)
+	diff |= BRIDGE_VLAN_DIFF(IFINDEX, a->ifindex != b->ifindex);
+	diff |= BRIDGE_VLAN_DIFF(RANGE, a->range != b->range);
+#undef BRIDGE_VLAN_DIFF
+	return 0;
+}
+
+static int bridge_vlan_clone(struct nl_object *_dst, struct nl_object *_src)
+{
+	struct rtnl_bridge_vlan *dst = nl_object_priv(_dst);
+	struct rtnl_bridge_vlan *src = nl_object_priv(_src);
+
+	dst->ifindex = src->ifindex;
+	dst->family = src->family;
+	dst->state = src->state;
+	dst->vlan_id = src->vlan_id;
+	dst->range = src->range;
 
 	return 0;
+}
+
+static int bridge_vlan_update(struct nl_object *old_obj, struct nl_object *new_obj)
+{
+	struct rtnl_bridge_vlan *old = (struct rtnl_bridge_vlan *) old_obj;
+	struct rtnl_bridge_vlan *new = (struct rtnl_bridge_vlan *) new_obj;
+
+	return NLE_SUCCESS;
 }
 
 static void br_vlan_dump_line(struct nl_object *obj, struct nl_dump_params *p)
@@ -30,7 +62,14 @@ static void br_vlan_dump_line(struct nl_object *obj, struct nl_dump_params *p)
 
 static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk)
 {
-	return nl_rtgen_request(sk, RTM_GETVLAN, AF_BRIDGE, NLM_F_DUMP);
+	int err;
+	struct br_vlan_msg gmsg = {
+		.family = AF_BRIDGE,
+	};
+
+	err = nl_send_simple(sk, RTM_GETVLAN, NLM_F_DUMP, &gmsg, sizeof(gmsg));
+
+	return err >= 0 ? 0 : err;
 }
 
 static struct nla_policy br_vlandb_policy[BRIDGE_VLANDB_MAX + 1] = {
@@ -105,6 +144,8 @@ static struct nl_object_ops bridge_vlan_obj_ops = {
 		    [NL_DUMP_STATS] = br_vlan_dump_line,
 		    },
 	.oo_compare = bridge_vlan_compare,
+	.oo_clone = bridge_vlan_clone,
+	.oo_update = bridge_vlan_update,
 };
 
 static struct nl_cache_ops bridge_vlan_ops = {
