@@ -57,14 +57,14 @@ static int bridge_vlan_update(struct nl_object *old_obj, struct nl_object *new_o
 
 static void br_vlan_dump_line(struct nl_object *_obj, struct nl_dump_params *p)
 {
-	struct rtnl_bridge_vlan *obj = (struct rtnl_bridge_vlan*) _obj;
+	struct rtnl_bridge_vlan *obj = (struct rtnl_bridge_vlan*) obj;
 
 	nl_dump(p, "Ifindex=%d\n", obj->ifindex);
-	nl_dump(p, "VLAN=\n", obj->vlan_id);
-	nl_dump(p, "State=\n", obj->state);
+	nl_dump(p, "VLAN=%d\n", obj->vlan_id);
+	nl_dump(p, "State=%d\n", obj->state);
 
 	if (obj->range)
-		nl_dump(p, "RANGE=\n", obj->range);
+		nl_dump(p, "RANGE=%d\n", obj->range);
 }
 
 static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk)
