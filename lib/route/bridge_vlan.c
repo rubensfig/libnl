@@ -57,11 +57,11 @@ static int bridge_vlan_update(struct nl_object *old_obj, struct nl_object *new_o
 
 static void br_vlan_dump_line(struct nl_object *_obj, struct nl_dump_params *p)
 {
-	struct rtnl_bridge_vlan *obj = (struct rtnl_bridge_vlan*) obj;
+	struct rtnl_bridge_vlan *obj = (struct rtnl_bridge_vlan *) _obj;
 
-	nl_dump(p, "Ifindex=%d\n", obj->ifindex);
-	nl_dump(p, "VLAN=%d\n", obj->vlan_id);
-	nl_dump(p, "State=%d\n", obj->state);
+	nl_dump(p, "Ifindex=%d:\n", obj->ifindex);
+	nl_dump(p, " VLAN=%d", obj->vlan_id);
+	nl_dump(p, " State=%d\n", obj->state);
 
 	if (obj->range)
 		nl_dump(p, "RANGE=%d\n", obj->range);
@@ -101,6 +101,7 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 	uint16_t range = 0;
 	struct bridge_vlan_info *bvlan_info;
 	struct rtnl_bridge_vlan *bvlan = rtnl_bridge_vlan_alloc();
+	struct br_vlan_msg *bmsg = nlmsg_data(nlh);
 
 	err = nlmsg_parse(nlh, sizeof(struct br_vlan_msg), tb, BRIDGE_VLANDB_MAX,
 			  br_vlandb_policy);
@@ -125,6 +126,8 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 	if (ttb[BRIDGE_VLANDB_ENTRY_RANGE])
 		range = nla_get_u16(ttb[BRIDGE_VLANDB_ENTRY_RANGE]);
 
+	bvlan->ifindex = bmsg->ifindex;
+	bvlan->family = bmsg->family;
 	bvlan->state = state;
 	bvlan->flags = bvlan_info->flags;
 	bvlan->vlan_id = bvlan_info->vid;
