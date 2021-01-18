@@ -30,6 +30,9 @@ extern "C" {
 
 	uint8_t rtnl_bridge_vlan_get_state(struct rtnl_bridge_vlan *bvlan);
 	int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state);
+
+	struct rtnl_bvlan_entry *rtnl_bvlan_entry_alloc(void);
+	void rtnl_bridge_vlan_add_entry(struct rtnl_bridge_vlan *bvlan, struct rtnl_bvlan_entry *entry);
 #ifdef __cplusplus
 }
 #endif

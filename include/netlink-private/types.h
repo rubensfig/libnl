@@ -1359,6 +1359,15 @@ struct rtnl_mdb_entry {
 	struct nl_list_head mdb_list;
 };
 
+struct rtnl_bvlan_entry {
+	uint16_t vlan_id;
+	uint16_t flags;
+	uint16_t range;
+	uint8_t state;
+
+	struct nl_list_head bridge_vlan_entry_list;
+};
+
 struct rtnl_bridge_vlan {
 	NLHDR_COMMON
 	uint32_t ifindex;
@@ -1368,5 +1377,7 @@ struct rtnl_bridge_vlan {
 	uint16_t flags;
 	uint16_t range;
 	uint8_t state;
+
+	struct nl_list_head bridge_vlan_list;
 };
 #endif

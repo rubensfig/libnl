@@ -19,6 +19,27 @@ static struct nl_cache_ops rtnl_bridge_vlan_ops;
 static struct nl_object_ops bridge_vlan_obj_ops;
 /** @endcond */
 
+static void bridge_vlan_constructor(struct nl_object *obj)
+{
+	struct rtnl_bridge_vlan *_bridge_vlan = (struct rtnl_bridge_vlan *) obj;
+
+	nl_init_list_head(&_bridge_vlan->bridge_vlan_list);
+}
+
+static void bvlan_entry_free_data(struct rtnl_bvlan_entry *entry)
+{
+	free(entry);
+}
+
+static void bridge_vlan_free_data(struct nl_object *obj)
+{
+	struct rtnl_bridge_vlan *bvlan = (struct rtnl_bridge_vlan *) obj;
+	struct rtnl_bvlan_entry *bvlan_entry;
+
+	nl_list_for_each_entry(bvlan_entry, &bvlan->bridge_vlan_list, bridge_vlan_entry_list)
+	    bvlan_entry_free_data(bvlan_entry);
+}
+
 static uint64_t bridge_vlan_compare(struct nl_object *_a, struct nl_object *_b,
 				  uint64_t attrs, int flags)
 {
@@ -26,11 +47,12 @@ static uint64_t bridge_vlan_compare(struct nl_object *_a, struct nl_object *_b,
 	struct rtnl_bridge_vlan *b = (struct rtnl_bridge_vlan *) _b;
 	uint64_t diff = 0;
 
+#if 0
 #define BRIDGE_VLAN_DIFF(ATTR, EXPR) ATTR_DIFF(attrs, BRIDGE_VLAN_ATTR_##ATTR, a, b, EXPR)
 	diff |= BRIDGE_VLAN_DIFF(IFINDEX, a->ifindex != b->ifindex);
-	diff |= BRIDGE_VLAN_DIFF(RANGE, a->range != b->range);
 #undef BRIDGE_VLAN_DIFF
-	return 0;
+#endif
+	return 1;
 }
 
 static int bridge_vlan_clone(struct nl_object *_dst, struct nl_object *_src)
@@ -55,16 +77,24 @@ static int bridge_vlan_update(struct nl_object *old_obj, struct nl_object *new_o
 	return NLE_SUCCESS;
 }
 
+static void brvlan_entry_dump_line(struct rtnl_bvlan_entry *entry, struct nl_dump_params *p)
+{
+	nl_dump(p, " VLAN=%d", entry->vlan_id);
+	nl_dump(p, " State=%d\n", entry->state);
+
+	if (entry->range)
+		nl_dump(p, "RANGE=%d\n", entry->range);
+}
+
 static void br_vlan_dump_line(struct nl_object *_obj, struct nl_dump_params *p)
 {
 	struct rtnl_bridge_vlan *obj = (struct rtnl_bridge_vlan *) _obj;
+	struct rtnl_bvlan_entry *entry;
 
 	nl_dump(p, "Ifindex=%d:\n", obj->ifindex);
-	nl_dump(p, " VLAN=%d", obj->vlan_id);
-	nl_dump(p, " State=%d\n", obj->state);
-
-	if (obj->range)
-		nl_dump(p, "RANGE=%d\n", obj->range);
+	nl_list_for_each_entry(entry, &obj->bridge_vlan_list, bridge_vlan_entry_list) {
+		brvlan_entry_dump_line(entry, p);
+	}
 }
 
 static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk)
@@ -75,7 +105,6 @@ static int bridge_vlan_request_update(struct nl_cache *cache, struct nl_sock *sk
 	};
 
 	err = nl_send_simple(sk, RTM_GETVLAN, NLM_F_DUMP, &gmsg, sizeof(gmsg));
-
 	return err >= 0 ? 0 : err;
 }
 
@@ -99,43 +128,45 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 	struct nlattr *tb[BRIDGE_VLANDB_MAX + 1], *ttb[BRIDGE_VLANDB_ENTRY_MAX + 1];
 	uint8_t state = 0;
 	uint16_t range = 0;
-	struct bridge_vlan_info *bvlan_info;
+	struct bridge_vlan_info *bvlan_info = NULL;
 	struct rtnl_bridge_vlan *bvlan = rtnl_bridge_vlan_alloc();
 	struct br_vlan_msg *bmsg = nlmsg_data(nlh);
 
 	err = nlmsg_parse(nlh, sizeof(struct br_vlan_msg), tb, BRIDGE_VLANDB_MAX,
 			  br_vlandb_policy);
 
-	if (err < 0)
-		goto errout;
-
-	if (!tb[BRIDGE_VLANDB_ENTRY])
-	{
-		err = -NLE_NOATTR;
-		goto errout;
-	}
-
-	nla_parse_nested(ttb, BRIDGE_VLANDB_ENTRY_MAX, tb[BRIDGE_VLANDB_ENTRY], br_vlandb_entry_policy);
-
-	if (ttb[BRIDGE_VLANDB_ENTRY_INFO])
-		bvlan_info = nla_data(ttb[BRIDGE_VLANDB_ENTRY_INFO]);
-
-	if (ttb[BRIDGE_VLANDB_ENTRY_STATE])
-		state = nla_get_u8(ttb[BRIDGE_VLANDB_ENTRY_STATE]);
-
-	if (ttb[BRIDGE_VLANDB_ENTRY_RANGE])
-		range = nla_get_u16(ttb[BRIDGE_VLANDB_ENTRY_RANGE]);
+	struct nlattr *pos;
+	int rem = nlh->nlmsg_len;
 
 	bvlan->ifindex = bmsg->ifindex;
 	bvlan->family = bmsg->family;
-	bvlan->state = state;
-	bvlan->flags = bvlan_info->flags;
-	bvlan->vlan_id = bvlan_info->vid;
-	bvlan->range = range;
+	for (pos = nlmsg_data(nlh); nla_ok(pos, rem); pos = nla_next(pos, &rem)) {
+		if (nla_type(pos) != BRIDGE_VLANDB_ENTRY)
+			continue;
+
+		struct rtnl_bvlan_entry *_bvlan = rtnl_bvlan_entry_alloc();
+
+		nla_parse_nested(ttb, BRIDGE_VLANDB_ENTRY_MAX, pos, br_vlandb_entry_policy);
+
+		if (ttb[BRIDGE_VLANDB_ENTRY_INFO])
+			bvlan_info = nla_data(ttb[BRIDGE_VLANDB_ENTRY_INFO]);
+
+		if (ttb[BRIDGE_VLANDB_ENTRY_STATE])
+			state = nla_get_u8(ttb[BRIDGE_VLANDB_ENTRY_STATE]);
+
+		if (ttb[BRIDGE_VLANDB_ENTRY_RANGE])
+			range = nla_get_u16(ttb[BRIDGE_VLANDB_ENTRY_RANGE]);
+
+		_bvlan->state = state;
+		_bvlan->flags = bvlan_info->flags;
+		_bvlan->vlan_id = bvlan_info->vid;
+		_bvlan->range = range;
+
+		rtnl_bridge_vlan_add_entry(bvlan, _bvlan);
+	}
 
 	err = pp->pp_cb((struct nl_object *) bvlan, pp);
-	return err;
-errout:
+
 	rtnl_bridge_vlan_put(bvlan);
 	return err;
 }
@@ -153,9 +184,11 @@ static struct nl_object_ops bridge_vlan_obj_ops = {
 		    [NL_DUMP_DETAILS] = br_vlan_dump_line,
 		    [NL_DUMP_STATS] = br_vlan_dump_line,
 		    },
+	.oo_constructor = bridge_vlan_constructor,
 	.oo_compare = bridge_vlan_compare,
 	.oo_clone = bridge_vlan_clone,
 	.oo_update = bridge_vlan_update,
+	.oo_free_data = bridge_vlan_free_data,
 };
 
 static struct nl_cache_ops bridge_vlan_ops = {
@@ -276,6 +309,11 @@ errout:
  * @name Get/ Set
  * @{
  */
+void rtnl_bridge_vlan_add_entry(struct rtnl_bridge_vlan *bvlan, struct rtnl_bvlan_entry *entry)
+{
+	nl_list_add_tail(&entry->bridge_vlan_entry_list, &bvlan->bridge_vlan_list);
+}
+
 struct rtnl_bridge_vlan *rtnl_bridge_vlan_get(struct nl_cache *cache, int ifindex)
 {
 	struct rtnl_bridge_vlan *bvlan_entry;
@@ -327,6 +365,16 @@ int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state)
 	return 0;
 }
 /** @} */
+
+struct rtnl_bvlan_entry *rtnl_bvlan_entry_alloc(void)
+{
+	struct rtnl_bvlan_entry *entry;
+
+	entry = calloc(1, sizeof(struct rtnl_bvlan_entry));
+	if (!entry)
+		return NULL;
+	return entry;
+}
 
 struct rtnl_bridge_vlan *rtnl_bridge_vlan_alloc(void)
 {

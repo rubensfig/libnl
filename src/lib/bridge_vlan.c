@@ -33,8 +33,6 @@ struct nl_cache *nl_cli_bridge_vlan_alloc_cache_flags(struct nl_sock *sock,
 	struct nl_cache *cache;
 	rtnl_bridge_vlan_alloc_cache_flags(sock, &cache, flags);
 
-	nl_cache_mngt_provide(cache);
-
 	return cache;
 }
 
