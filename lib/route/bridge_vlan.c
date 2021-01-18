@@ -36,8 +36,8 @@ static void bridge_vlan_free_data(struct nl_object *obj)
 	struct rtnl_bridge_vlan *bvlan = (struct rtnl_bridge_vlan *) obj;
 	struct rtnl_bvlan_entry *bvlan_entry;
 
-	nl_list_for_each_entry(bvlan_entry, &bvlan->bridge_vlan_list, bridge_vlan_entry_list)
-	    bvlan_entry_free_data(bvlan_entry);
+//	nl_list_for_each_entry(bvlan_entry, &bvlan->bridge_vlan_list, bridge_vlan_entry_list)
+//	    bvlan_entry_free_data(bvlan_entry);
 }
 
 static uint64_t bridge_vlan_compare(struct nl_object *_a, struct nl_object *_b,
@@ -134,9 +134,13 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 
 	err = nlmsg_parse(nlh, sizeof(struct br_vlan_msg), tb, BRIDGE_VLANDB_MAX,
 			  br_vlandb_policy);
+	if (err < 0)
+		goto errout;
 
 	struct nlattr *pos;
 	int rem = nlh->nlmsg_len;
+
+	bvlan->ce_msgtype = nlh->nlmsg_type;
 
 	bvlan->ifindex = bmsg->ifindex;
 	bvlan->family = bmsg->family;
@@ -166,7 +170,7 @@ static int bridge_vlan_msg_parser(struct nl_cache_ops *ops, struct sockaddr_nl *
 	}
 
 	err = pp->pp_cb((struct nl_object *) bvlan, pp);
-
+errout:
 	rtnl_bridge_vlan_put(bvlan);
 	return err;
 }
