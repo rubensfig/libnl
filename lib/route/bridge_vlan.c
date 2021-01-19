@@ -336,6 +336,22 @@ struct rtnl_bridge_vlan *rtnl_bridge_vlan_get(struct nl_cache *cache, int ifinde
 
 }
 
+struct rtnl_bvlan_entry *rtnl_bridge_vlan_get_entry_head(struct rtnl_bridge_vlan *obj) 
+{
+			return nl_list_first_entry(&obj->bridge_vlan_list, struct rtnl_bvlan_entry, bridge_vlan_entry_list);
+
+}
+
+void rtnl_bridge_vlan_foreach_entry(struct rtnl_bridge_vlan *obj,
+			    void (*cb)(struct rtnl_bvlan_entry *, void *),
+			    void *arg)
+{
+	struct rtnl_bvlan_entry *entry;
+	nl_list_for_each_entry(entry, &obj->bridge_vlan_list, bridge_vlan_entry_list) {
+		cb(entry, arg);
+	}
+}
+
 int rtnl_bridge_vlan_get_ifindex(struct rtnl_bridge_vlan *bvlan)
 {
 	return bvlan->ifindex;
@@ -347,23 +363,23 @@ int rtnl_bridge_vlan_set_ifindex(struct rtnl_bridge_vlan *bvlan, int ifindex)
 	return 0;
 }
 
-int rtnl_bridge_vlan_get_vlan_id(struct rtnl_bridge_vlan *bvlan)
+int rtnl_bridge_vlan_entry_get_vlan_id(struct rtnl_bvlan_entry *bvlan)
 {
 	return bvlan->vlan_id;
 }
 
-int rtnl_bridge_vlan_set_vlan_id(struct rtnl_bridge_vlan *bvlan, uint16_t vid)
+int rtnl_bridge_vlan_entry_set_vlan_id(struct rtnl_bvlan_entry *bvlan, uint16_t vid)
 {
 	bvlan->vlan_id = vid;
 	return 0;
 }
 
-uint8_t rtnl_bridge_vlan_get_state(struct rtnl_bridge_vlan *bvlan)
+uint8_t rtnl_bridge_vlan_entry_get_state(struct rtnl_bvlan_entry *bvlan)
 {
 	return bvlan->state;
 }
 
-int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state)
+int rtnl_bridge_vlan_entry_set_state(struct rtnl_bvlan_entry *bvlan, uint8_t state)
 {
 	bvlan->state = state;
 	return 0;

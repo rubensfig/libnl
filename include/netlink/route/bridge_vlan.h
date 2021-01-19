@@ -25,14 +25,15 @@ extern "C" {
 	int rtnl_bridge_vlan_get_ifindex(struct rtnl_bridge_vlan *bvlan);
 	int rtnl_bridge_vlan_set_ifindex(struct rtnl_bridge_vlan *bvlan, int ifindex);
 
-	int rtnl_bridge_vlan_get_vlan_id(struct rtnl_bridge_vlan *bvlan);
-	int rtnl_bridge_vlan_set_vlan_id(struct rtnl_bridge_vlan *bvlan, uint16_t vid);
-
-	uint8_t rtnl_bridge_vlan_get_state(struct rtnl_bridge_vlan *bvlan);
-	int rtnl_bridge_vlan_set_state(struct rtnl_bridge_vlan *bvlan, uint8_t state);
-
 	struct rtnl_bvlan_entry *rtnl_bvlan_entry_alloc(void);
 	void rtnl_bridge_vlan_add_entry(struct rtnl_bridge_vlan *bvlan, struct rtnl_bvlan_entry *entry);
+  void rtnl_bridge_vlan_foreach_entry(struct rtnl_bridge_vlan *obj,
+      void (*cb)(struct rtnl_bvlan_entry *, void *), void *arg);
+  struct rtnl_bvlan_entry *rtnl_bridge_vlan_get_entry_head(struct rtnl_bridge_vlan *obj);
+  int rtnl_bridge_vlan_entry_get_vlan_id(struct rtnl_bvlan_entry *bvlan);
+  int rtnl_bridge_vlan_entry_set_vlan_id(struct rtnl_bvlan_entry *bvlan, uint16_t vid);
+  uint8_t rtnl_bridge_vlan_entry_get_state(struct rtnl_bvlan_entry *bvlan);
+  int rtnl_bridge_vlan_entry_set_state(struct rtnl_bvlan_entry *bvlan, uint8_t state);
 #ifdef __cplusplus
 }
 #endif

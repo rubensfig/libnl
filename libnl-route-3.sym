@@ -1177,9 +1177,11 @@ libnl_3_6 {
 	rtnl_bridge_vlan_alloc_cache_flags;
 	rtnl_bridge_vlan_get_ifindex;
 	rtnl_bridge_vlan_set_ifindex;
-	rtnl_bridge_vlan_get_state;
-	rtnl_bridge_vlan_set_state;
-	rtnl_bridge_vlan_get_vlan_id;
-	rtnl_bridge_vlan_set_vlan_id;
+  rtnl_bridge_vlan_entry_get_vlan_id;
+  rtnl_bridge_vlan_entry_set_vlan_id;
+  rtnl_bridge_vlan_entry_get_state;
+  rtnl_bridge_vlan_add_entry;
+  rtnl_bridge_vlan_foreach_entry;
+  rtnl_bridge_vlan_get_entry_head;
 } libnl_3_5;
 
